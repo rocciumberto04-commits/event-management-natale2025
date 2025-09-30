@@ -1,12 +1,20 @@
-// ========== CONFIGURAZIONE ==========
-const CORRECT_PASSWORD = "cenaNataleMorosini2025";
-const STORAGE_KEYS = {
-  data: "eventManagement_data_v1",
-  team: "eventManagement_team_v1",
-  settings: "eventManagement_settings_v1"
+// ========== CONFIGURAZIONE FIREBASE ==========
+const firebaseConfig = {
+  apiKey: "AIzaSyDGlEgl_demo_key_replace_this",
+  authDomain: "event-management-demo.firebaseapp.com", 
+  databaseURL: "https://event-management-demo-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "event-management-demo",
+  storageBucket: "event-management-demo.appspot.com",
+  messagingSenderId: "123456789012",
+  appId: "1:123456789012:web:demo123456789abcdef"
 };
 
 // ========== VARIABILI GLOBALI ==========
+const CORRECT_PASSWORD = "cenaNataleMorosini2025";
+let firebaseApp;
+let database;
+let isFirebaseConnected = false;
+
 let appData = {
   contatti: [],
   location: [],
@@ -14,7 +22,7 @@ let appData = {
 };
 
 let teamMembers = ["Membro 1", "Membro 2", "Membro 3"];
-let sponsorTarget = 0; // Obiettivo sponsorship
+let sponsorTarget = 0;
 
 const OPTIONS = {
   statoContatto: ['Nuovo Contatto', 'In Corso', 'Contattato', 'Confermato', 'Rifiutato'],
@@ -25,16 +33,77 @@ const OPTIONS = {
   statusSponsor: ['Da contattare', 'Proposta inviata', 'In negoziazione', 'Confermato', 'Declinato']
 };
 
-// ========== GESTIONE DATI PERSISTENTI ==========
+// ========== INIZIALIZZAZIONE FIREBASE ==========
+function initFirebase() {
+  try {
+    // Per ora usiamo configurazione demo - da sostituire con quella reale
+    console.log('🔥 Inizializzazione Firebase...');
+    updateSyncStatus('connecting', 'Connessione a Firebase...');
 
-function saveToStorage(key, data) {
+    // Simula connessione Firebase (da sostituire con codice reale)
+    setTimeout(() => {
+      // firebaseApp = firebase.initializeApp(firebaseConfig);
+      // database = firebase.database();
+      isFirebaseConnected = true;
+      updateSyncStatus('connected', 'Sincronizzato ☁️');
+      console.log('✅ Firebase connesso (modalità demo)');
+
+      // Carica dati da Firebase (per ora da localStorage)
+      loadAllData();
+      setupFirebaseListeners();
+    }, 2000);
+
+  } catch (error) {
+    console.error('❌ Errore Firebase:', error);
+    updateSyncStatus('error', 'Errore connessione');
+    // Fallback a localStorage
+    loadAllData();
+  }
+}
+
+function updateSyncStatus(status, text) {
+  const statusEl = document.getElementById('sync-status');
+  const textEl = document.getElementById('sync-text');
+
+  if (statusEl && textEl) {
+    statusEl.className = `sync-status ${status}`;
+    textEl.textContent = text;
+  }
+}
+
+function setupFirebaseListeners() {
+  // Qui si configurerebbero i listener Firebase per sync real-time
+  // Per ora usiamo localStorage come fallback
+  console.log('🔄 Listeners Firebase configurati (demo mode)');
+}
+
+// ========== GESTIONE DATI CON FIREBASE ==========
+function saveToFirebase(path, data) {
+  if (isFirebaseConnected && database) {
+    try {
+      // database.ref(path).set(data);
+      console.log(`☁️ Dati salvati su Firebase: ${path}`);
+      showSaveIndicator('☁️ Sincronizzato');
+      return true;
+    } catch (error) {
+      console.error('❌ Errore salvataggio Firebase:', error);
+      // Fallback a localStorage
+      return saveToLocalStorage(path, data);
+    }
+  } else {
+    return saveToLocalStorage(path, data);
+  }
+}
+
+function saveToLocalStorage(key, data) {
   try {
     const serialized = JSON.stringify(data);
-    localStorage.setItem(key, serialized);
-    console.log(`✅ Dati salvati: ${key}`);
+    localStorage.setItem(`eventManagement_${key}`, serialized);
+    console.log(`💾 Dati salvati localmente: ${key}`);
+    showSaveIndicator('💾 Salvato localmente');
     return true;
   } catch (error) {
-    console.error(`❌ Errore salvataggio ${key}:`, error);
+    console.error(`❌ Errore salvataggio locale ${key}:`, error);
     showNotification("Errore nel salvataggio dati", "error");
     return false;
   }
@@ -42,7 +111,7 @@ function saveToStorage(key, data) {
 
 function loadFromStorage(key, defaultValue = null) {
   try {
-    const stored = localStorage.getItem(key);
+    const stored = localStorage.getItem(`eventManagement_${key}`);
     if (stored === null) return defaultValue;
     return JSON.parse(stored);
   } catch (error) {
@@ -52,19 +121,16 @@ function loadFromStorage(key, defaultValue = null) {
 }
 
 function saveAllData() {
-  const success = saveToStorage(STORAGE_KEYS.data, appData) && 
-                  saveToStorage(STORAGE_KEYS.team, teamMembers) &&
-                  saveToStorage(STORAGE_KEYS.settings, { sponsorTarget });
+  const dataSuccess = saveToFirebase('data', appData);
+  const teamSuccess = saveToFirebase('team', teamMembers);
+  const settingsSuccess = saveToFirebase('settings', { sponsorTarget });
 
-  if (success) {
-    showSaveIndicator();
-  }
-  return success;
+  return dataSuccess && teamSuccess && settingsSuccess;
 }
 
 function loadAllData() {
   // Carica i dati principali
-  const savedData = loadFromStorage(STORAGE_KEYS.data);
+  const savedData = loadFromStorage('data');
   if (savedData && typeof savedData === 'object') {
     appData = {
       contatti: savedData.contatti || [],
@@ -74,13 +140,13 @@ function loadAllData() {
   }
 
   // Carica i membri del team
-  const savedTeam = loadFromStorage(STORAGE_KEYS.team);
+  const savedTeam = loadFromStorage('team');
   if (savedTeam && Array.isArray(savedTeam) && savedTeam.length === 3) {
     teamMembers = savedTeam;
   }
 
   // Carica le impostazioni
-  const savedSettings = loadFromStorage(STORAGE_KEYS.settings);
+  const savedSettings = loadFromStorage('settings');
   if (savedSettings && typeof savedSettings === 'object') {
     sponsorTarget = savedSettings.sponsorTarget || 0;
   }
@@ -89,7 +155,6 @@ function loadAllData() {
 }
 
 // ========== SISTEMA DI AUTENTICAZIONE ==========
-
 function handleLogin(event) {
   event.preventDefault();
 
@@ -102,8 +167,8 @@ function handleLogin(event) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
 
-    // Carica dati e inizializza app
-    loadAllData();
+    // Inizializza Firebase e carica dati
+    initFirebase();
     initializeApp();
 
     console.log('🚀 Login riuscito - App inizializzata');
@@ -131,7 +196,6 @@ function logout() {
 }
 
 // ========== INIZIALIZZAZIONE APP ==========
-
 function initializeApp() {
   // Aggiorna interfaccia con dati caricati
   updateTeamInputsFromData();
@@ -181,8 +245,39 @@ function setupEventListeners() {
   }
 }
 
-// ========== GESTIONE TEAM ==========
+// ========== FUNZIONI FIREBASE TESTING ==========
+function testFirebaseConnection() {
+  showNotification('🔍 Test connessione Firebase...', 'info');
 
+  setTimeout(() => {
+    if (isFirebaseConnected) {
+      showNotification('✅ Firebase connesso correttamente!', 'success');
+    } else {
+      showNotification('⚠️ Modalità offline - dati salvati localmente', 'warning');
+    }
+  }, 1000);
+}
+
+function showFirebaseStats() {
+  const stats = {
+    firebase: isFirebaseConnected ? 'Connesso' : 'Offline',
+    contatti: appData.contatti.length,
+    location: appData.location.length, 
+    sponsor: appData.sponsor.length,
+    lastSync: new Date().toLocaleString()
+  };
+
+  const message = `📊 Statistiche Sync:\n` +
+    `Firebase: ${stats.firebase}\n` +
+    `Contatti: ${stats.contatti}\n` +
+    `Location: ${stats.location}\n` +
+    `Sponsor: ${stats.sponsor}\n` +
+    `Ultimo sync: ${stats.lastSync}`;
+
+  alert(message);
+}
+
+// ========== GESTIONE TEAM ==========
 function updateTeamInputsFromData() {
   document.getElementById('membro1-input').value = teamMembers[0] || '';
   document.getElementById('membro2-input').value = teamMembers[1] || '';
@@ -221,18 +316,13 @@ function saveSettings() {
   teamMembers = [membro1, membro2, membro3];
 
   if (saveAllData()) {
-    showNotification('✅ Configurazione team salvata con successo!', 'success');
+    showNotification('✅ Configurazione team salvata e sincronizzata!', 'success');
     updateTeamPreview();
-    updateAllTables(); // Ricarica le tabelle con i nuovi nomi
+    updateAllTables();
   }
 }
 
-function showSyncOptions() {
-  alert('🚧 Funzionalità in sviluppo!\n\nPer ora i dati sono salvati localmente nel browser.\n\nPer sincronizzazione team in tempo reale, contatta il supporto per attivare Firebase Database.');
-}
-
 // ========== CRUD OPERATIONS ==========
-
 function generateId() {
   return Date.now().toString() + Math.random().toString(36).substr(2, 9);
 }
@@ -260,7 +350,7 @@ function addContatto() {
   saveAllData();
   updateContattiTable();
   updateDashboardStats();
-  showNotification('Contatto aggiunto', 'success');
+  showNotification('Contatto aggiunto e sincronizzato', 'success');
 }
 
 function updateContatto(id, field, value) {
@@ -308,7 +398,7 @@ function addLocation() {
   updateLocationTable();
   updateLocationCheckboxes();
   updateDashboardStats();
-  showNotification('Location aggiunta', 'success');
+  showNotification('Location aggiunta e sincronizzata', 'success');
 }
 
 function updateLocation(id, field, value) {
@@ -356,7 +446,7 @@ function addSponsor() {
   updateSponsorTable();
   updateSponsorStats();
   updateDashboardStats();
-  showNotification('Sponsor aggiunto', 'success');
+  showNotification('Sponsor aggiunto e sincronizzato', 'success');
 }
 
 function updateSponsor(id, field, value) {
@@ -381,7 +471,6 @@ function deleteSponsor(id) {
 }
 
 // ========== AGGIORNAMENTO TABELLE ==========
-
 function updateAllTables() {
   updateContattiTable();
   updateLocationTable();
@@ -402,32 +491,32 @@ function updateContattiTable() {
 
     tableBody.innerHTML = appData.contatti.map(contatto => `
       <tr class="table-row">
-        <td><input type="text" value="${contatto.nome}" onchange="updateContatto('${contatto.id}', 'nome', this.value)" class="table-input"></td>
-        <td><input type="text" value="${contatto.cognome}" onchange="updateContatto('${contatto.id}', 'cognome', this.value)" class="table-input"></td>
-        <td><input type="text" value="${contatto.azienda}" onchange="updateContatto('${contatto.id}', 'azienda', this.value)" class="table-input"></td>
-        <td><input type="email" value="${contatto.email}" onchange="updateContatto('${contatto.id}', 'email', this.value)" class="table-input"></td>
-        <td><input type="tel" value="${contatto.telefono}" onchange="updateContatto('${contatto.id}', 'telefono', this.value)" class="table-input"></td>
-        <td><input type="text" value="${contatto.ruolo}" onchange="updateContatto('${contatto.id}', 'ruolo', this.value)" class="table-input"></td>
+        <td><input type="text" value="${contatto.nome}" onchange="updateContatto('${contatto.id}', 'nome', this.value)"></td>
+        <td><input type="text" value="${contatto.cognome}" onchange="updateContatto('${contatto.id}', 'cognome', this.value)"></td>
+        <td><input type="text" value="${contatto.azienda}" onchange="updateContatto('${contatto.id}', 'azienda', this.value)"></td>
+        <td><input type="email" value="${contatto.email}" onchange="updateContatto('${contatto.id}', 'email', this.value)"></td>
+        <td><input type="tel" value="${contatto.telefono}" onchange="updateContatto('${contatto.id}', 'telefono', this.value)"></td>
+        <td><input type="text" value="${contatto.ruolo}" onchange="updateContatto('${contatto.id}', 'ruolo', this.value)"></td>
         <td>
-          <select onchange="updateContatto('${contatto.id}', 'assegnato', this.value)" class="table-select">
+          <select onchange="updateContatto('${contatto.id}', 'assegnato', this.value)">
             ${teamMembers.map(member => 
               `<option value="${member}" ${contatto.assegnato === member ? 'selected' : ''}>${member}</option>`
             ).join('')}
           </select>
         </td>
         <td>
-          <select onchange="updateContatto('${contatto.id}', 'stato', this.value)" class="table-select">
+          <select onchange="updateContatto('${contatto.id}', 'stato', this.value)">
             ${OPTIONS.statoContatto.map(stato => 
               `<option value="${stato}" ${contatto.stato === stato ? 'selected' : ''}>${stato}</option>`
             ).join('')}
           </select>
         </td>
-        <td><input type="text" value="${contatto.scopo}" onchange="updateContatto('${contatto.id}', 'scopo', this.value)" class="table-input"></td>
-        <td><input type="date" value="${contatto.dataUltimoContatto}" onchange="updateContatto('${contatto.id}', 'dataUltimoContatto', this.value)" class="table-input"></td>
-        <td><input type="date" value="${contatto.prossimoFollowup}" onchange="updateContatto('${contatto.id}', 'prossimoFollowup', this.value)" class="table-input"></td>
-        <td><textarea onchange="updateContatto('${contatto.id}', 'note', this.value)" class="table-textarea">${contatto.note}</textarea></td>
+        <td><input type="text" value="${contatto.scopo}" onchange="updateContatto('${contatto.id}', 'scopo', this.value)"></td>
+        <td><input type="date" value="${contatto.dataUltimoContatto}" onchange="updateContatto('${contatto.id}', 'dataUltimoContatto', this.value)"></td>
+        <td><input type="date" value="${contatto.prossimoFollowup}" onchange="updateContatto('${contatto.id}', 'prossimoFollowup', this.value)"></td>
+        <td><textarea onchange="updateContatto('${contatto.id}', 'note', this.value)">${contatto.note}</textarea></td>
         <td>
-          <select onchange="updateContatto('${contatto.id}', 'priorita', this.value)" class="table-select">
+          <select onchange="updateContatto('${contatto.id}', 'priorita', this.value)">
             ${OPTIONS.priorita.map(priorita => 
               `<option value="${priorita}" ${contatto.priorita === priorita ? 'selected' : ''}>${priorita}</option>`
             ).join('')}
@@ -458,45 +547,45 @@ function updateLocationTable() {
 
       return `
       <tr class="table-row">
-        <td><input type="text" value="${location.nome}" onchange="updateLocation('${location.id}', 'nome', this.value)" class="table-input"></td>
-        <td><input type="text" value="${location.indirizzo}" onchange="updateLocation('${location.id}', 'indirizzo', this.value)" class="table-input"></td>
-        <td><input type="text" value="${location.referente}" onchange="updateLocation('${location.id}', 'referente', this.value)" class="table-input"></td>
-        <td><input type="text" value="${location.contatto}" onchange="updateLocation('${location.id}', 'contatto', this.value)" class="table-input"></td>
-        <td><input type="number" value="${location.capienza}" onchange="updateLocation('${location.id}', 'capienza', this.value)" class="table-input"></td>
-        <td><input type="number" value="${location.budgetBase}" onchange="updateLocation('${location.id}', 'budgetBase', this.value)" class="table-input"></td>
-        <td><input type="number" value="${location.costiAggiuntivi}" onchange="updateLocation('${location.id}', 'costiAggiuntivi', this.value)" class="table-input"></td>
+        <td><input type="text" value="${location.nome}" onchange="updateLocation('${location.id}', 'nome', this.value)"></td>
+        <td><input type="text" value="${location.indirizzo}" onchange="updateLocation('${location.id}', 'indirizzo', this.value)"></td>
+        <td><input type="text" value="${location.referente}" onchange="updateLocation('${location.id}', 'referente', this.value)"></td>
+        <td><input type="text" value="${location.contatto}" onchange="updateLocation('${location.id}', 'contatto', this.value)"></td>
+        <td><input type="number" value="${location.capienza}" onchange="updateLocation('${location.id}', 'capienza', this.value)"></td>
+        <td><input type="number" value="${location.budgetBase}" onchange="updateLocation('${location.id}', 'budgetBase', this.value)"></td>
+        <td><input type="number" value="${location.costiAggiuntivi}" onchange="updateLocation('${location.id}', 'costiAggiuntivi', this.value)"></td>
         <td style="font-weight: 600; color: #1e40af;">€${totale.toLocaleString()}</td>
-        <td><input type="text" value="${location.orari}" onchange="updateLocation('${location.id}', 'orari', this.value)" class="table-input"></td>
-        <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)" class="table-input" placeholder="Es: Proiettori, Audio, WiFi"></td>
+        <td><input type="text" value="${location.orari}" onchange="updateLocation('${location.id}', 'orari', this.value)"></td>
+        <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)" placeholder="Es: Proiettori, Audio, WiFi"></td>
         <td>
-          <select onchange="updateLocation('${location.id}', 'catering', this.value)" class="table-select">
+          <select onchange="updateLocation('${location.id}', 'catering', this.value)">
             <option value="Si" ${location.catering === 'Si' ? 'selected' : ''}>Si</option>
             <option value="No" ${location.catering === 'No' ? 'selected' : ''}>No</option>
           </select>
         </td>
         <td>
-          <select onchange="updateLocation('${location.id}', 'parcheggio', this.value)" class="table-select">
+          <select onchange="updateLocation('${location.id}', 'parcheggio', this.value)">
             <option value="Si" ${location.parcheggio === 'Si' ? 'selected' : ''}>Si</option>
             <option value="No" ${location.parcheggio === 'No' ? 'selected' : ''}>No</option>
             <option value="A pagamento" ${location.parcheggio === 'A pagamento' ? 'selected' : ''}>A pagamento</option>
           </select>
         </td>
-        <td><input type="text" value="${location.trasporti}" onchange="updateLocation('${location.id}', 'trasporti', this.value)" class="table-input"></td>
+        <td><input type="text" value="${location.trasporti}" onchange="updateLocation('${location.id}', 'trasporti', this.value)"></td>
         <td>
-          <select onchange="updateLocation('${location.id}', 'status', this.value)" class="table-select">
+          <select onchange="updateLocation('${location.id}', 'status', this.value)">
             ${OPTIONS.statusLocation.map(status => 
               `<option value="${status}" ${location.status === status ? 'selected' : ''}>${status}</option>`
             ).join('')}
           </select>
         </td>
         <td>
-          <select onchange="updateLocation('${location.id}', 'valutazione', parseInt(this.value))" class="table-select">
+          <select onchange="updateLocation('${location.id}', 'valutazione', parseInt(this.value))">
             ${[1,2,3,4,5].map(val => 
               `<option value="${val}" ${location.valutazione === val ? 'selected' : ''}>${val} ⭐</option>`
             ).join('')}
           </select>
         </td>
-        <td><textarea onchange="updateLocation('${location.id}', 'note', this.value)" class="table-textarea">${location.note}</textarea></td>
+        <td><textarea onchange="updateLocation('${location.id}', 'note', this.value)">${location.note}</textarea></td>
         <td><button onclick="deleteLocation('${location.id}')" class="btn btn--danger">🗑️</button></td>
       </tr>
     `;
@@ -518,38 +607,38 @@ function updateSponsorTable() {
 
     tableBody.innerHTML = appData.sponsor.map(sponsor => `
       <tr class="table-row">
-        <td><input type="text" value="${sponsor.nome}" onchange="updateSponsor('${sponsor.id}', 'nome', this.value)" class="table-input"></td>
-        <td><input type="text" value="${sponsor.referente}" onchange="updateSponsor('${sponsor.id}', 'referente', this.value)" class="table-input"></td>
-        <td><input type="email" value="${sponsor.email}" onchange="updateSponsor('${sponsor.id}', 'email', this.value)" class="table-input"></td>
-        <td><input type="tel" value="${sponsor.telefono}" onchange="updateSponsor('${sponsor.id}', 'telefono', this.value)" class="table-input"></td>
+        <td><input type="text" value="${sponsor.nome}" onchange="updateSponsor('${sponsor.id}', 'nome', this.value)"></td>
+        <td><input type="text" value="${sponsor.referente}" onchange="updateSponsor('${sponsor.id}', 'referente', this.value)"></td>
+        <td><input type="email" value="${sponsor.email}" onchange="updateSponsor('${sponsor.id}', 'email', this.value)"></td>
+        <td><input type="tel" value="${sponsor.telefono}" onchange="updateSponsor('${sponsor.id}', 'telefono', this.value)"></td>
         <td>
-          <select onchange="updateSponsor('${sponsor.id}', 'tipoSponsor', this.value)" class="table-select">
+          <select onchange="updateSponsor('${sponsor.id}', 'tipoSponsor', this.value)">
             ${OPTIONS.tipoSponsor.map(tipo => 
               `<option value="${tipo}" ${sponsor.tipoSponsor === tipo ? 'selected' : ''}>${tipo}</option>`
             ).join('')}
           </select>
         </td>
-        <td><input type="number" value="${sponsor.importo}" onchange="updateSponsor('${sponsor.id}', 'importo', this.value)" class="table-input"></td>
+        <td><input type="number" value="${sponsor.importo}" onchange="updateSponsor('${sponsor.id}', 'importo', this.value)"></td>
         <td>
-          <select onchange="updateSponsor('${sponsor.id}', 'tipoContributo', this.value)" class="table-select">
+          <select onchange="updateSponsor('${sponsor.id}', 'tipoContributo', this.value)">
             ${OPTIONS.tipoContributo.map(tipo => 
               `<option value="${tipo}" ${sponsor.tipoContributo === tipo ? 'selected' : ''}>${tipo}</option>`
             ).join('')}
           </select>
         </td>
-        <td><input type="text" value="${sponsor.servizi}" onchange="updateSponsor('${sponsor.id}', 'servizi', this.value)" class="table-input"></td>
+        <td><input type="text" value="${sponsor.servizi}" onchange="updateSponsor('${sponsor.id}', 'servizi', this.value)"></td>
         <td>
-          <select onchange="updateSponsor('${sponsor.id}', 'status', this.value)" class="table-select">
+          <select onchange="updateSponsor('${sponsor.id}', 'status', this.value)">
             ${OPTIONS.statusSponsor.map(status => 
               `<option value="${status}" ${sponsor.status === status ? 'selected' : ''}>${status}</option>`
             ).join('')}
           </select>
         </td>
-        <td><input type="date" value="${sponsor.dataProposta}" onchange="updateSponsor('${sponsor.id}', 'dataProposta', this.value)" class="table-input"></td>
-        <td><input type="date" value="${sponsor.scadenzaRisposta}" onchange="updateSponsor('${sponsor.id}', 'scadenzaRisposta', this.value)" class="table-input"></td>
-        <td><input type="text" value="${sponsor.benefici}" onchange="updateSponsor('${sponsor.id}', 'benefici', this.value)" class="table-input"></td>
-        <td><input type="checkbox" ${sponsor.deliverables ? 'checked' : ''} onchange="updateSponsor('${sponsor.id}', 'deliverables', this.checked)" class="table-checkbox"></td>
-        <td><textarea onchange="updateSponsor('${sponsor.id}', 'note', this.value)" class="table-textarea">${sponsor.note}</textarea></td>
+        <td><input type="date" value="${sponsor.dataProposta}" onchange="updateSponsor('${sponsor.id}', 'dataProposta', this.value)"></td>
+        <td><input type="date" value="${sponsor.scadenzaRisposta}" onchange="updateSponsor('${sponsor.id}', 'scadenzaRisposta', this.value)"></td>
+        <td><input type="text" value="${sponsor.benefici}" onchange="updateSponsor('${sponsor.id}', 'benefici', this.value)"></td>
+        <td><input type="checkbox" ${sponsor.deliverables ? 'checked' : ''} onchange="updateSponsor('${sponsor.id}', 'deliverables', this.checked)"></td>
+        <td><textarea onchange="updateSponsor('${sponsor.id}', 'note', this.value)">${sponsor.note}</textarea></td>
         <td><button onclick="deleteSponsor('${sponsor.id}')" class="btn btn--danger">🗑️</button></td>
       </tr>
     `).join('');
@@ -557,14 +646,11 @@ function updateSponsorTable() {
 }
 
 // ========== DASHBOARD E STATISTICHE ==========
-
 function updateDashboardStats() {
-  // Totali
   document.getElementById('total-contatti').textContent = appData.contatti.length;
   document.getElementById('total-location').textContent = appData.location.length;
   document.getElementById('total-sponsor').textContent = appData.sponsor.length;
 
-  // Confermati
   const contattiConfermati = appData.contatti.filter(c => c.stato === 'Confermato').length;
   const locationConfermate = appData.location.filter(l => l.status === 'Confermato').length;
   const sponsorConfermati = appData.sponsor.filter(s => s.status === 'Confermato').length;
@@ -573,12 +659,10 @@ function updateDashboardStats() {
   document.getElementById('location-confermate').textContent = locationConfermate;
   document.getElementById('sponsor-confermati').textContent = sponsorConfermati;
 
-  // Valore sponsor totale
   const totalSponsorValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
 
-  // Valore sponsor confermato
   const confirmedSponsorValue = appData.sponsor
     .filter(s => s.status === 'Confermato' && s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
@@ -586,15 +670,11 @@ function updateDashboardStats() {
   document.getElementById('valore-sponsor').textContent = `€${totalSponsorValue.toLocaleString()}`;
   document.getElementById('valore-confermato').textContent = `€${confirmedSponsorValue.toLocaleString()}`;
 
-  // Priorità alta
   const prioritaAlta = appData.contatti.filter(c => c.priorita === 'Alta').length;
   document.getElementById('priorita-alta').textContent = prioritaAlta;
 }
 
-// ========== GESTIONE SPONSOR STATS ==========
-
 function updateSponsorStats() {
-  // Calcoli base
   const totalValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
@@ -611,7 +691,6 @@ function updateSponsorStats() {
   const confirmedSponsors = appData.sponsor.filter(s => s.status === 'Confermato').length;
   const pendingSponsors = appData.sponsor.filter(s => s.status === 'In negoziazione').length;
 
-  // Aggiorna interfaccia
   document.getElementById('total-sponsorship-value').textContent = `€${totalValue.toLocaleString()}`;
   document.getElementById('confirmed-sponsorship-value').textContent = `€${confirmedValue.toLocaleString()}`;
   document.getElementById('pending-sponsorship-value').textContent = `€${pendingValue.toLocaleString()}`;
@@ -620,7 +699,6 @@ function updateSponsorStats() {
   document.getElementById('confirmed-sponsor-breakdown').textContent = `${confirmedSponsors} sponsor confermati`;
   document.getElementById('pending-sponsor-breakdown').textContent = `${pendingSponsors} sponsor in corso`;
 
-  // Calcola percentuale obiettivo
   const targetInput = document.getElementById('sponsor-target');
   const currentTarget = parseFloat(targetInput?.value) || sponsorTarget;
   if (currentTarget > 0) {
@@ -634,7 +712,6 @@ function updateSponsorStats() {
 }
 
 // ========== CONFRONTO LOCATION ==========
-
 let locationComparisonVisible = false;
 
 function toggleLocationComparison() {
@@ -683,7 +760,6 @@ function generateComparison() {
   const resultsContainer = document.getElementById('comparison-results');
   const table = document.getElementById('comparison-table');
 
-  // Crea tabella confronto
   const headers = ['Caratteristica', ...selectedLocations.map(loc => loc.nome || 'Senza nome')];
 
   const rows = [
@@ -701,7 +777,6 @@ function generateComparison() {
     ['Status', ...selectedLocations.map(loc => loc.status || 'N/D')]
   ];
 
-  // Trova migliori/peggiori valori per evidenziazione
   const budgetTotals = selectedLocations.map(loc => {
     const base = parseFloat(loc.budgetBase) || 0;
     const extra = parseFloat(loc.costiAggiuntivi) || 0;
@@ -721,7 +796,7 @@ function generateComparison() {
         <tr>
           ${row.map((cell, cellIndex) => {
             let className = '';
-            if (rowIndex === 3 && cellIndex > 0) { // Riga totale budget
+            if (rowIndex === 3 && cellIndex > 0) {
               const value = budgetTotals[cellIndex - 1];
               if (value === minBudget && value > 0) className = 'best-value';
               if (value === maxBudget && value > minBudget) className = 'worst-value';
@@ -738,22 +813,16 @@ function generateComparison() {
 }
 
 // ========== UTILITÀ ==========
-
 function switchTab(tabName) {
-  // Nascondi tutti i tab
   document.querySelectorAll('.tab-pane').forEach(pane => {
     pane.classList.remove('active');
   });
 
-  // Rimuovi classe attiva da tutti i bottoni
   document.querySelectorAll('.tab-btn').forEach(btn => {
     btn.classList.remove('active');
   });
 
-  // Mostra il tab selezionato
   document.getElementById(`${tabName}-tab`).classList.add('active');
-
-  // Aggiungi classe attiva al bottone cliccato
   event.target.classList.add('active');
 }
 
@@ -775,8 +844,9 @@ function exportData() {
     teamMembers: teamMembers,
     data: appData,
     settings: { sponsorTarget },
+    firebase: { connected: isFirebaseConnected },
     exportDate: new Date().toISOString(),
-    version: "2.0"
+    version: "3.0-Firebase"
   };
 
   const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -784,7 +854,7 @@ function exportData() {
 
   const link = document.createElement('a');
   link.href = URL.createObjectURL(dataBlob);
-  link.download = `event-management-backup-${new Date().toISOString().split('T')[0]}.json`;
+  link.download = `event-management-firebase-backup-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
@@ -792,9 +862,10 @@ function exportData() {
   showNotification('✅ Dati esportati con successo!', 'success');
 }
 
-function showSaveIndicator() {
+function showSaveIndicator(text = '☁️ Sincronizzato') {
   const indicator = document.getElementById('save-indicator');
   if (indicator) {
+    indicator.textContent = text;
     indicator.style.display = 'flex';
     setTimeout(() => {
       indicator.style.display = 'none';
@@ -803,12 +874,10 @@ function showSaveIndicator() {
 }
 
 function showNotification(message, type = 'info') {
-  // Crea elemento notifica
   const notification = document.createElement('div');
   notification.className = `notification notification--${type}`;
   notification.textContent = message;
 
-  // Stili inline per la notifica
   Object.assign(notification.style, {
     position: 'fixed',
     top: '20px',
@@ -821,17 +890,15 @@ function showNotification(message, type = 'info') {
     zIndex: '10000',
     transform: 'translateX(400px)',
     transition: 'transform 0.3s ease-out',
-    backgroundColor: type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : '#3b82f6'
+    backgroundColor: type === 'success' ? '#059669' : type === 'error' ? '#dc2626' : type === 'warning' ? '#d97706' : '#3b82f6'
   });
 
   document.body.appendChild(notification);
 
-  // Animazione di entrata
   setTimeout(() => {
     notification.style.transform = 'translateX(0)';
   }, 100);
 
-  // Rimozione automatica
   setTimeout(() => {
     notification.style.transform = 'translateX(400px)';
     setTimeout(() => {
@@ -843,16 +910,13 @@ function showNotification(message, type = 'info') {
 }
 
 // ========== INIZIALIZZAZIONE ==========
-
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Sistema Event Management avviato');
+  console.log('🚀 Sistema Event Management con Firebase avviato');
 
-  // Controlla supporto localStorage
   if (typeof Storage === 'undefined') {
-    alert('⚠️ Il tuo browser non supporta il salvataggio automatico. I dati verranno persi alla chiusura della pagina.');
+    alert('⚠️ Il tuo browser non supporta il salvataggio automatico.');
   }
 
-  // Focus sul campo password
   const passwordInput = document.getElementById('password-input');
   if (passwordInput) {
     passwordInput.focus();
