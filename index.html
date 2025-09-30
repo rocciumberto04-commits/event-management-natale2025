@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Event Management System</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-screen">
+        <div class="login-container">
+            <div class="login-card">
+                <div class="login-header">
+                    <div class="login-icon">🔐</div>
+                    <h1>Event Management System</h1>
+                    <p>Sistema di gestione eventi professionale</p>
+                </div>
+                <form class="login-form" onsubmit="handleLogin(event)">
+                    <div class="form-group">
+                        <label for="password-input" class="form-label">Password di accesso</label>
+                        <input 
+                            type="password" 
+                            id="password-input" 
+                            class="form-control"
+                            placeholder="Inserisci la password..."
+                            required
+                            autocomplete="current-password"
+                        >
+                    </div>
+                    <button type="submit" class="btn btn--primary btn--full">
+                        🚀 Accedi al Sistema
+                    </button>
+                    <div id="login-error" class="login-error" style="display: none;">
+                        ❌ Password non corretta. Riprova.
+                    </div>
+                </form>
+                <div class="login-footer">
+                    <p>🔒 Accesso riservato ai membri autorizzati del progetto</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main App (hidden initially) -->
+    <div id="main-app" class="app-container" style="display: none;">
+        <!-- Header -->
+        <header class="app-header">
+            <div class="header-left">
+                <h1>📊 Event Management Dashboard</h1>
+            </div>
+            <div class="header-actions">
+                <div class="save-indicator" id="save-indicator" style="display: none;">
+                    ✅ Salvato automaticamente
+                </div>
+                <button class="btn btn--sm btn--outline" onclick="exportData()">
+                    📤 Esporta
+                </button>
+                <button class="btn btn--sm btn--secondary" onclick="logout()">
+                    🚪 Logout
+                </button>
+            </div>
+        </header>
+
+        <!-- Navigation Tabs -->
+        <nav class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('impostazioni')">
+                ⚙️ Impostazioni
+            </button>
+            <button class="tab-btn" onclick="switchTab('dashboard')">
+                🏠 Dashboard
+            </button>
+            <button class="tab-btn" onclick="switchTab('contatti')">
+                👥 Contatti
+            </button>
+            <button class="tab-btn" onclick="switchTab('location')">
+                📍 Location
+            </button>
+            <button class="tab-btn" onclick="switchTab('sponsor')">
+                💰 Sponsor
+            </button>
+        </nav>
+
+        <!-- Tab Content -->
+        <main class="tab-content">
+            <!-- Impostazioni Tab -->
+            <div id="impostazioni-tab" class="tab-pane active">
+                <div class="settings-container">
+                    <div class="card">
+                        <div class="card__header">
+                            <h2>⚙️ Configurazione Team</h2>
+                            <p>Personalizza i nomi dei membri del team che gestiranno il progetto</p>
+                        </div>
+                        <div class="card__body">
+                            <div class="settings-form">
+                                <div class="form-row">
+                                    <div class="form-group">
+                                        <label for="membro1-input" class="form-label">Membro 1</label>
+                                        <input type="text" id="membro1-input" class="form-control" placeholder="Nome del primo membro">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="membro2-input" class="form-label">Membro 2</label>
+                                        <input type="text" id="membro2-input" class="form-control" placeholder="Nome del secondo membro">
+                                    </div>
+                                    <div class="form-group">
+                                        <label for="membro3-input" class="form-label">Membro 3</label>
+                                        <input type="text" id="membro3-input" class="form-control" placeholder="Nome del terzo membro">
+                                    </div>
+                                </div>
+                                <button onclick="saveSettings()" class="btn btn--primary">
+                                    💾 Salva Configurazione
+                                </button>
+                            </div>
+
+                            <div class="team-preview-section">
+                                <h3>👀 Anteprima Team</h3>
+                                <div id="team-preview" class="team-preview">
+                                    <!-- Populated by JavaScript -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dashboard Tab -->
+            <div id="dashboard-tab" class="tab-pane">
+                <div class="dashboard-container">
+                    <h2>📈 Panoramica Progetto</h2>
+
+                    <!-- Statistics Cards -->
+                    <div class="stats-grid">
+                        <div class="stat-card stat-card--contatti">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-content">
+                                <h3 id="total-contatti">0</h3>
+                                <p>Contatti Totali</p>
+                            </div>
+                            <div class="stat-detail">
+                                <span id="contatti-confermati">0</span> confermati
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card--location">
+                            <div class="stat-icon">📍</div>
+                            <div class="stat-content">
+                                <h3 id="total-location">0</h3>
+                                <p>Location Valutate</p>
+                            </div>
+                            <div class="stat-detail">
+                                <span id="location-confermate">0</span> confermate
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card--sponsor">
+                            <div class="stat-icon">💰</div>
+                            <div class="stat-content">
+                                <h3 id="total-sponsor">0</h3>
+                                <p>Sponsor Totali</p>
+                            </div>
+                            <div class="stat-detail">
+                                <span id="valore-sponsor">€0</span> valore totale
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card--priorita">
+                            <div class="stat-icon">🔥</div>
+                            <div class="stat-content">
+                                <h3 id="priorita-alta">0</h3>
+                                <p>Priorità Alta</p>
+                            </div>
+                            <div class="stat-detail">
+                                Richiede attenzione
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contatti Tab -->
+            <div id="contatti-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>👥 Gestione Contatti</h2>
+                    <div class="section-actions">
+                        <input type="text" id="contatti-search" placeholder="🔍 Cerca contatti..." class="search-input">
+                        <button onclick="addContatto()" class="btn btn--primary">
+                            ➕ Aggiungi Contatto
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div id="contatti-empty-state" class="empty-state">
+                        <div class="empty-state-icon">📋</div>
+                        <h3>Nessun contatto inserito</h3>
+                        <p>Inizia aggiungendo il primo contatto per il tuo progetto</p>
+                        <button onclick="addContatto()" class="btn btn--primary">➕ Aggiungi Primo Contatto</button>
+                    </div>
+
+                    <table class="data-table" id="contatti-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Cognome</th>
+                                <th>Azienda</th>
+                                <th>Email</th>
+                                <th>Telefono</th>
+                                <th>Ruolo</th>
+                                <th>Assegnato a</th>
+                                <th>Stato</th>
+                                <th>Scopo</th>
+                                <th>Ultimo Contatto</th>
+                                <th>Prossimo Follow-up</th>
+                                <th>Note</th>
+                                <th>Priorità</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="contatti-table-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Location Tab -->
+            <div id="location-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>📍 Gestione Location</h2>
+                    <div class="section-actions">
+                        <input type="text" id="location-search" placeholder="🔍 Cerca location..." class="search-input">
+                        <button onclick="addLocation()" class="btn btn--primary">
+                            ➕ Aggiungi Location
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div id="location-empty-state" class="empty-state">
+                        <div class="empty-state-icon">🏢</div>
+                        <h3>Nessuna location inserita</h3>
+                        <p>Aggiungi le venue che stai valutando per l'evento</p>
+                        <button onclick="addLocation()" class="btn btn--primary">➕ Aggiungi Prima Location</button>
+                    </div>
+
+                    <table class="data-table" id="location-table">
+                        <thead>
+                            <tr>
+                                <th>Nome</th>
+                                <th>Indirizzo</th>
+                                <th>Referente</th>
+                                <th>Contatto</th>
+                                <th>Capienza</th>
+                                <th>Budget Base (€)</th>
+                                <th>Costi Extra (€)</th>
+                                <th>Orari</th>
+                                <th>Attrezzature</th>
+                                <th>Catering</th>
+                                <th>Parcheggio</th>
+                                <th>Trasporti</th>
+                                <th>Status</th>
+                                <th>Valutazione</th>
+                                <th>Note</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="location-table-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Sponsor Tab -->
+            <div id="sponsor-tab" class="tab-pane">
+                <div class="section-header">
+                    <h2>💰 Gestione Sponsor</h2>
+                    <div class="section-actions">
+                        <input type="text" id="sponsor-search" placeholder="🔍 Cerca sponsor..." class="search-input">
+                        <button onclick="addSponsor()" class="btn btn--primary">
+                            ➕ Aggiungi Sponsor
+                        </button>
+                    </div>
+                </div>
+
+                <div class="table-container">
+                    <div id="sponsor-empty-state" class="empty-state">
+                        <div class="empty-state-icon">🤝</div>
+                        <h3>Nessuno sponsor inserito</h3>
+                        <p>Inizia a tracciare potenziali sponsor e partnership</p>
+                        <button onclick="addSponsor()" class="btn btn--primary">➕ Aggiungi Primo Sponsor</button>
+                    </div>
+
+                    <table class="data-table" id="sponsor-table">
+                        <thead>
+                            <tr>
+                                <th>Nome/Azienda</th>
+                                <th>Referente</th>
+                                <th>Email</th>
+                                <th>Telefono</th>
+                                <th>Tipo Sponsor</th>
+                                <th>Importo (€)</th>
+                                <th>Tipo Contributo</th>
+                                <th>Servizi</th>
+                                <th>Status</th>
+                                <th>Data Proposta</th>
+                                <th>Scadenza</th>
+                                <th>Benefici</th>
+                                <th>Completato</th>
+                                <th>Note</th>
+                                <th>Azioni</th>
+                            </tr>
+                        </thead>
+                        <tbody id="sponsor-table-body">
+                            <!-- Populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
