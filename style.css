@@ -656,81 +656,78 @@ body {
   min-width: 250px;
 }
 
-/* ========== TABELLE STILE EMBEDDED APP ========== */
+/* ========== TABELLE SFONDO BIANCO ========== */
 
-/* Container principale tabella - STILE PULITO */
+/* Container principale tabella - SFONDO BIANCO */
 .table-container-clean {
-  background: #2c3e50;
+  background: white;
   border-radius: var(--radius-lg);
   overflow: hidden;
   margin-bottom: 2rem;
   box-shadow: var(--shadow-md);
-  border: 1px solid #34495e;
+  border: 1px solid var(--border-color);
 }
 
-/* NO scroll hint - rimosso completamente */
-.scroll-hint {
-  display: none !important;
-}
-
-/* Container con scroll interno - SOLO LA TABELLA */
+/* Container con scroll interno */
 .table-scroll-clean {
   overflow-x: auto;
   overflow-y: hidden;
   width: 100%;
-  max-height: 500px; /* Altezza fissa per evitare movimento pagina */
-
-  /* Scrollbar sottile e discreta */
+  max-height: 500px;
+  
+  /* Scrollbar personalizzata ma più sottile */
   scrollbar-width: thin;
-  scrollbar-color: #3498db #2c3e50;
+  scrollbar-color: #3b82f6 #f1f5f9;
 }
 
-/* Webkit scrollbar personalizzata */
 .table-scroll-clean::-webkit-scrollbar {
   height: 8px;
-  background-color: #2c3e50;
+  background-color: #f8fafc;
 }
 
 .table-scroll-clean::-webkit-scrollbar-thumb {
-  background: #3498db;
+  background: #3b82f6;
   border-radius: 4px;
+  border: 1px solid #f8fafc;
 }
 
 .table-scroll-clean::-webkit-scrollbar-thumb:hover {
-  background: #2980b9;
+  background: #1d4ed8;
 }
 
 .table-scroll-clean::-webkit-scrollbar-track {
-  background: #34495e;
+  background: #f1f5f9;
+  border-radius: 4px;
 }
 
-/* Tabella principale - STILE EMBEDDED */
+/* Tabella principale - SFONDO BIANCO */
 .data-table-clean {
   width: 100%;
-  min-width: 1400px; /* Larghezza per forzare scroll */
+  min-width: 1400px;
   border-collapse: collapse;
   font-size: 13px;
-  background: #2c3e50;
-  color: white;
+  background: white;
+  color: var(--text-primary);
   table-layout: fixed;
 }
 
-/* Header tabella - STILE SCURO */
+/* Header tabella - SFONDO AZZURRO CHIARO */
 .data-table-clean thead {
-  background: #34495e;
+  background: #f0f9ff;
   position: sticky;
   top: 0;
   z-index: 5;
 }
 
 .data-table-clean th {
-  background: #34495e;
-  color: #ecf0f1;
+  background: #f0f9ff;
+  color: #0c4a6e;
   padding: 12px 8px;
   text-align: left;
   font-weight: 600;
   font-size: 12px;
-  border-right: 1px solid #2c3e50;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 2px solid #3b82f6;
   white-space: nowrap;
   position: relative;
 }
@@ -739,13 +736,13 @@ body {
   border-right: none;
 }
 
-/* Celle tabella - STILE EMBEDDED */
+/* Celle tabella - SFONDO BIANCO */
 .data-table-clean td {
   padding: 8px;
-  border-right: 1px solid #34495e;
-  border-bottom: 1px solid #34495e;
+  border-right: 1px solid var(--border-color);
+  border-bottom: 1px solid var(--border-color);
   vertical-align: middle;
-  background: #2c3e50;
+  background: white;
 }
 
 .data-table-clean td:last-child {
@@ -753,11 +750,11 @@ body {
 }
 
 .data-table-clean tbody tr:hover {
-  background-color: #34495e;
+  background-color: #f8fafc;
 }
 
 .data-table-clean tbody tr:hover td {
-  background-color: #34495e;
+  background-color: #f8fafc;
 }
 
 /* LARGHEZZE COLONNE OTTIMIZZATE */
@@ -783,17 +780,17 @@ body {
 .col-amount { width: 100px; min-width: 100px; }
 .col-services { width: 180px; min-width: 180px; }
 
-/* Input nelle tabelle - STILE EMBEDDED */
+/* Input nelle tabelle - SFONDO BIANCO */
 .data-table-clean input,
 .data-table-clean select,
 .data-table-clean textarea {
   width: 100%;
   padding: 4px 6px;
-  border: 1px solid #7f8c8d;
+  border: 1px solid var(--border-color);
   border-radius: 3px;
   font-size: 11px;
-  background: #34495e;
-  color: white;
+  background: white;
+  color: var(--text-primary);
   transition: all 0.2s ease;
 }
 
@@ -801,9 +798,9 @@ body {
 .data-table-clean select:focus,
 .data-table-clean textarea:focus {
   outline: none;
-  border-color: #3498db;
-  background: #2c3e50;
-  box-shadow: 0 0 0 1px #3498db;
+  border-color: #3b82f6;
+  background: #f8fafc;
+  box-shadow: 0 0 0 1px #3b82f6;
 }
 
 .data-table-clean textarea {
@@ -816,12 +813,11 @@ body {
   width: 14px;
   height: 14px;
   cursor: pointer;
-  accent-color: #3498db;
+  accent-color: #3b82f6;
 }
 
 .data-table-clean input[type="date"] {
   cursor: pointer;
-  color-scheme: dark;
 }
 
 .data-table-clean select {
@@ -833,12 +829,13 @@ body {
   padding: 4px 8px;
   font-size: 10px;
   border-radius: 3px;
-  background: #e74c3c;
-  border: 1px solid #c0392b;
+  background: #ef4444;
+  border: 1px solid #dc2626;
+  color: white;
 }
 
 .data-table-clean .btn--danger:hover {
-  background: #c0392b;
+  background: #dc2626;
 }
 
 /* Empty States */
@@ -874,7 +871,7 @@ body {
   .data-table-clean {
     min-width: 1200px;
   }
-
+  
   .table-scroll-clean {
     max-height: 400px;
   }
@@ -884,66 +881,66 @@ body {
   .tab-content {
     padding: 1rem;
   }
-
+  
   .app-header {
     padding: 1rem;
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-
+  
   .header-actions {
     justify-content: center;
     flex-wrap: wrap;
   }
-
+  
   .section-header {
     flex-direction: column;
     align-items: stretch;
   }
-
+  
   .section-actions {
     justify-content: stretch;
   }
-
+  
   .search-input {
     min-width: 100%;
   }
-
+  
   .stats-grid, .summary-cards {
     grid-template-columns: 1fr;
   }
-
+  
   .form-row {
     grid-template-columns: 1fr;
   }
-
+  
   .team-preview {
     grid-template-columns: 1fr;
   }
-
+  
   .checkbox-group {
     grid-template-columns: 1fr;
   }
-
+  
   .data-table-clean {
     min-width: 1000px;
     font-size: 11px;
   }
-
+  
   .data-table-clean th,
   .data-table-clean td {
     padding: 6px;
   }
-
+  
   .table-scroll-clean {
     max-height: 350px;
   }
-
+  
   .table-scroll-clean::-webkit-scrollbar {
     height: 6px;
   }
-
+  
   .sync-controls {
     justify-content: center;
   }
@@ -953,30 +950,30 @@ body {
   .login-container {
     padding: 1rem;
   }
-
+  
   .login-form {
     padding: 1.5rem;
   }
-
+  
   .tab-navigation {
     padding: 0 1rem;
   }
-
+  
   .tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.8rem;
   }
-
+  
   .data-table-clean {
     min-width: 900px;
     font-size: 10px;
   }
-
+  
   .col-name, .col-company { width: 100px; min-width: 100px; }
   .col-email { width: 150px; min-width: 150px; }
   .col-notes, .col-address { width: 160px; min-width: 160px; }
   .col-services { width: 140px; min-width: 140px; }
-
+  
   .table-scroll-clean {
     max-height: 300px;
   }
@@ -1019,28 +1016,28 @@ body {
   .login-screen, .app-header, .tab-navigation, .btn {
     display: none !important;
   }
-
+  
   .tab-pane.active {
     display: block !important;
   }
-
+  
   body {
     background: white;
   }
-
+  
   .card, .table-container-clean {
     box-shadow: none;
     border: 1px solid #ccc;
     break-inside: avoid;
   }
-
+  
   .data-table-clean {
     min-width: auto;
     font-size: 10px;
     background: white;
     color: black;
   }
-
+  
   .data-table-clean th,
   .data-table-clean td {
     background: white;
