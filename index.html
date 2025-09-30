@@ -57,7 +57,7 @@
             <div class="header-actions">
                 <div class="sync-status" id="sync-status">
                     <span class="sync-icon">🔄</span>
-                    <span id="sync-text">Sincronizzazione...</span>
+                    <span id="sync-text">Inizializzazione...</span>
                 </div>
                 <div class="save-indicator" id="save-indicator" style="display: none;">
                     ☁️ Sincronizzato
@@ -235,7 +235,7 @@
                     </div>
                 </div>
 
-                <div class="table-container-fixed">
+                <div class="table-container-clean">
                     <div id="contatti-empty-state" class="empty-state">
                         <div class="empty-state-icon">📋</div>
                         <h3>Nessun contatto inserito</h3>
@@ -243,28 +243,24 @@
                         <button onclick="addContatto()" class="btn btn--primary">➕ Aggiungi Primo Contatto</button>
                     </div>
 
-                    <div class="scroll-hint">
-                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
-                    </div>
-
-                    <div class="table-scroll-container">
-                        <table class="data-table-fixed" id="contatti-table">
+                    <div class="table-scroll-clean">
+                        <table class="data-table-clean" id="contatti-table">
                             <thead>
                                 <tr>
-                                    <th class="col-fixed col-nome">Nome</th>
-                                    <th class="col-fixed col-cognome">Cognome</th>
-                                    <th class="col-medium">Azienda</th>
-                                    <th class="col-large">Email</th>
-                                    <th class="col-medium">Telefono</th>
-                                    <th class="col-medium">Ruolo</th>
-                                    <th class="col-medium">Assegnato a</th>
-                                    <th class="col-medium">Stato</th>
-                                    <th class="col-medium">Scopo</th>
-                                    <th class="col-medium">Ultimo Contatto</th>
-                                    <th class="col-medium">Prossimo Follow-up</th>
-                                    <th class="col-large">Note</th>
-                                    <th class="col-small">Priorità</th>
-                                    <th class="col-small">Azioni</th>
+                                    <th class="col-name">Nome</th>
+                                    <th class="col-name">Cognome</th>
+                                    <th class="col-company">Azienda</th>
+                                    <th class="col-email">Email</th>
+                                    <th class="col-phone">Telefono</th>
+                                    <th class="col-role">Ruolo</th>
+                                    <th class="col-assigned">Assegnato a</th>
+                                    <th class="col-status">Stato</th>
+                                    <th class="col-purpose">Scopo</th>
+                                    <th class="col-date">Ultimo Contatto</th>
+                                    <th class="col-date">Prossimo Follow-up</th>
+                                    <th class="col-notes">Note</th>
+                                    <th class="col-priority">Priorità</th>
+                                    <th class="col-actions">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="contatti-table-body">
@@ -312,8 +308,8 @@
 
                             <div id="comparison-results" class="comparison-results" style="display: none;">
                                 <h4>📈 Risultati Confronto</h4>
-                                <div class="table-scroll-container">
-                                    <table class="data-table-fixed comparison-table" id="comparison-table">
+                                <div class="table-scroll-clean">
+                                    <table class="data-table-clean comparison-table" id="comparison-table">
                                         <!-- Populated by JavaScript -->
                                     </table>
                                 </div>
@@ -322,7 +318,7 @@
                     </div>
                 </div>
 
-                <div class="table-container-fixed">
+                <div class="table-container-clean">
                     <div id="location-empty-state" class="empty-state">
                         <div class="empty-state-icon">🏢</div>
                         <h3>Nessuna location inserita</h3>
@@ -330,31 +326,27 @@
                         <button onclick="addLocation()" class="btn btn--primary">➕ Aggiungi Prima Location</button>
                     </div>
 
-                    <div class="scroll-hint">
-                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
-                    </div>
-
-                    <div class="table-scroll-container">
-                        <table class="data-table-fixed" id="location-table">
+                    <div class="table-scroll-clean">
+                        <table class="data-table-clean" id="location-table">
                             <thead>
                                 <tr>
-                                    <th class="col-fixed col-nome">Nome</th>
-                                    <th class="col-large">Indirizzo</th>
-                                    <th class="col-medium">Referente</th>
-                                    <th class="col-medium">Contatto</th>
-                                    <th class="col-small">Capienza</th>
-                                    <th class="col-medium">Budget Base (€)</th>
-                                    <th class="col-medium">Costi Extra (€)</th>
-                                    <th class="col-medium">Totale (€)</th>
-                                    <th class="col-medium">Orari</th>
-                                    <th class="col-large">Attrezzature</th>
-                                    <th class="col-small">Catering</th>
-                                    <th class="col-small">Parcheggio</th>
-                                    <th class="col-medium">Trasporti</th>
-                                    <th class="col-medium">Status</th>
-                                    <th class="col-small">Valutazione</th>
-                                    <th class="col-large">Note</th>
-                                    <th class="col-small">Azioni</th>
+                                    <th class="col-location-name">Nome</th>
+                                    <th class="col-address">Indirizzo</th>
+                                    <th class="col-contact">Referente</th>
+                                    <th class="col-contact">Contatto</th>
+                                    <th class="col-capacity">Capienza</th>
+                                    <th class="col-budget">Budget Base (€)</th>
+                                    <th class="col-budget">Costi Extra (€)</th>
+                                    <th class="col-budget">Totale (€)</th>
+                                    <th class="col-contact">Orari</th>
+                                    <th class="col-services">Attrezzature</th>
+                                    <th class="col-capacity">Catering</th>
+                                    <th class="col-capacity">Parcheggio</th>
+                                    <th class="col-contact">Trasporti</th>
+                                    <th class="col-status">Status</th>
+                                    <th class="col-rating">Valutazione</th>
+                                    <th class="col-notes">Note</th>
+                                    <th class="col-actions">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="location-table-body">
@@ -421,7 +413,7 @@
                     </div>
                 </div>
 
-                <div class="table-container-fixed">
+                <div class="table-container-clean">
                     <div id="sponsor-empty-state" class="empty-state">
                         <div class="empty-state-icon">🤝</div>
                         <h3>Nessuno sponsor inserito</h3>
@@ -429,29 +421,25 @@
                         <button onclick="addSponsor()" class="btn btn--primary">➕ Aggiungi Primo Sponsor</button>
                     </div>
 
-                    <div class="scroll-hint">
-                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
-                    </div>
-
-                    <div class="table-scroll-container">
-                        <table class="data-table-fixed" id="sponsor-table">
+                    <div class="table-scroll-clean">
+                        <table class="data-table-clean" id="sponsor-table">
                             <thead>
                                 <tr>
-                                    <th class="col-fixed col-nome">Nome/Azienda</th>
-                                    <th class="col-medium">Referente</th>
-                                    <th class="col-large">Email</th>
-                                    <th class="col-medium">Telefono</th>
-                                    <th class="col-medium">Tipo Sponsor</th>
-                                    <th class="col-medium">Importo (€)</th>
-                                    <th class="col-medium">Tipo Contributo</th>
-                                    <th class="col-large">Servizi</th>
-                                    <th class="col-medium">Status</th>
-                                    <th class="col-medium">Data Proposta</th>
-                                    <th class="col-medium">Scadenza</th>
-                                    <th class="col-large">Benefici</th>
-                                    <th class="col-small">Completato</th>
-                                    <th class="col-large">Note</th>
-                                    <th class="col-small">Azioni</th>
+                                    <th class="col-company">Nome/Azienda</th>
+                                    <th class="col-contact">Referente</th>
+                                    <th class="col-email">Email</th>
+                                    <th class="col-phone">Telefono</th>
+                                    <th class="col-sponsor-type">Tipo Sponsor</th>
+                                    <th class="col-amount">Importo (€)</th>
+                                    <th class="col-sponsor-type">Tipo Contributo</th>
+                                    <th class="col-services">Servizi</th>
+                                    <th class="col-status">Status</th>
+                                    <th class="col-date">Data Proposta</th>
+                                    <th class="col-date">Scadenza</th>
+                                    <th class="col-services">Benefici</th>
+                                    <th class="col-actions">Completato</th>
+                                    <th class="col-notes">Note</th>
+                                    <th class="col-actions">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="sponsor-table-body">
