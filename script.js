@@ -408,6 +408,7 @@ function setupEventListeners() {
     }
   });
 
+  // ✅ LOGIN LISTENER AGGIUNTO (era questo che mancava!)
   const loginForm = document.querySelector('.login-form');
   if (loginForm) {
     loginForm.removeEventListener('submit', handleLogin);
@@ -457,13 +458,13 @@ function showFirebaseStats() {
     localStorage: 'Disponibile ✅'
   };
 
-  const message = `📊 Statistiche Sincronizzazione:\n\n` +
-    `🔥 Firebase: ${stats.firebase}\n` +
-    `💾 LocalStorage: ${stats.localStorage}\n\n` +
-    `📊 Dati attuali:\n` +
-    `👥 Contatti: ${stats.contatti}\n` +
-    `📍 Location: ${stats.location}\n` +
-    `💰 Sponsor: ${stats.sponsor}\n\n` +
+  const message = `📊 Statistiche Sincronizzazione:\\n\\n` +
+    `🔥 Firebase: ${stats.firebase}\\n` +
+    `💾 LocalStorage: ${stats.localStorage}\\n\\n` +
+    `📊 Dati attuali:\\n` +
+    `👥 Contatti: ${stats.contatti}\\n` +
+    `📍 Location: ${stats.location}\\n` +
+    `💰 Sponsor: ${stats.sponsor}\\n\\n` +
     `🕐 Ultimo aggiornamento: ${stats.lastSync}`;
 
   alert(message);
@@ -494,7 +495,7 @@ function updateTeamPreview() {
       </div>
       <div class="team-member-preview">
         <span class="team-member-icon">👤</span>
-        <span>${membro3}</span>
+        <span>${membro2}</span>
       </div>
       <div class="team-member-preview">
         <span class="team-member-icon">👤</span>
