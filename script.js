@@ -33,32 +33,51 @@ const OPTIONS = {
   statusSponsor: ['Da contattare', 'Proposta inviata', 'In negoziazione', 'Confermato', 'Declinato']
 };
 
-// ========== INIZIALIZZAZIONE FIREBASE ==========
-function initFirebase() {
-  try {
-    // Per ora usiamo configurazione demo - da sostituire con quella reale
-    console.log('🔥 Inizializzazione Firebase...');
-    updateSyncStatus('connecting', 'Connessione a Firebase...');
+// ========== INIZIALIZZAZIONE FIREBASE CORRETTA ==========
+async function initFirebase() {
+  return new Promise((resolve) => {
+    try {
+      console.log('🔥 Inizializzazione Firebase...');
+      updateSyncStatus('connecting', 'Connessione a Firebase...');
 
-    // Simula connessione Firebase (da sostituire con codice reale)
-    setTimeout(() => {
-      // firebaseApp = firebase.initializeApp(firebaseConfig);
-      // database = firebase.database();
-      isFirebaseConnected = true;
-      updateSyncStatus('connected', 'Sincronizzato ☁️');
-      console.log('✅ Firebase connesso (modalità demo)');
+      // Prima carica dati locali come fallback immediato
+      loadFromLocalStorage();
 
-      // Carica dati da Firebase (per ora da localStorage)
-      loadAllData();
-      setupFirebaseListeners();
-    }, 2000);
+      // Simula connessione Firebase (da sostituire con codice reale)
+      setTimeout(() => {
+        try {
+          // firebaseApp = firebase.initializeApp(firebaseConfig);
+          // database = firebase.database();
 
-  } catch (error) {
-    console.error('❌ Errore Firebase:', error);
-    updateSyncStatus('error', 'Errore connessione');
-    // Fallback a localStorage
-    loadAllData();
-  }
+          // Simula caricamento dati da Firebase
+          // database.ref('data').once('value', snapshot => {
+          //   const firebaseData = snapshot.val();
+          //   if (firebaseData) {
+          //     appData = firebaseData;
+          //   }
+          // });
+
+          isFirebaseConnected = true;
+          updateSyncStatus('connected', 'Sincronizzato ☁️');
+          console.log('✅ Firebase connesso (modalità demo)');
+
+          setupFirebaseListeners();
+          resolve(); // Risolvi la Promise solo dopo aver caricato i dati
+        } catch (error) {
+          console.error('❌ Errore Firebase:', error);
+          updateSyncStatus('error', 'Modalità offline');
+          isFirebaseConnected = false;
+          resolve(); // Risolvi comunque per non bloccare l'app
+        }
+      }, 1500); // Ridotto timeout per esperienza più veloce
+
+    } catch (error) {
+      console.error('❌ Errore inizializzazione Firebase:', error);
+      updateSyncStatus('error', 'Errore connessione');
+      loadFromLocalStorage(); // Fallback completo a localStorage
+      resolve();
+    }
+  });
 }
 
 function updateSyncStatus(status, text) {
@@ -77,17 +96,19 @@ function setupFirebaseListeners() {
   console.log('🔄 Listeners Firebase configurati (demo mode)');
 }
 
-// ========== GESTIONE DATI CON FIREBASE ==========
+// ========== GESTIONE DATI MIGLIORATA ==========
 function saveToFirebase(path, data) {
   if (isFirebaseConnected && database) {
     try {
       // database.ref(path).set(data);
       console.log(`☁️ Dati salvati su Firebase: ${path}`);
       showSaveIndicator('☁️ Sincronizzato');
+
+      // Salva anche localmente come backup
+      saveToLocalStorage(path, data);
       return true;
     } catch (error) {
       console.error('❌ Errore salvataggio Firebase:', error);
-      // Fallback a localStorage
       return saveToLocalStorage(path, data);
     }
   } else {
@@ -109,14 +130,43 @@ function saveToLocalStorage(key, data) {
   }
 }
 
-function loadFromStorage(key, defaultValue = null) {
+function loadFromLocalStorage() {
   try {
-    const stored = localStorage.getItem(`eventManagement_${key}`);
-    if (stored === null) return defaultValue;
-    return JSON.parse(stored);
+    // Carica i dati principali
+    const savedData = localStorage.getItem('eventManagement_data');
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      if (parsedData && typeof parsedData === 'object') {
+        appData = {
+          contatti: parsedData.contatti || [],
+          location: parsedData.location || [],
+          sponsor: parsedData.sponsor || []
+        };
+      }
+    }
+
+    // Carica i membri del team
+    const savedTeam = localStorage.getItem('eventManagement_team');
+    if (savedTeam) {
+      const parsedTeam = JSON.parse(savedTeam);
+      if (parsedTeam && Array.isArray(parsedTeam) && parsedTeam.length === 3) {
+        teamMembers = parsedTeam;
+      }
+    }
+
+    // Carica le impostazioni
+    const savedSettings = localStorage.getItem('eventManagement_settings');
+    if (savedSettings) {
+      const parsedSettings = JSON.parse(savedSettings);
+      if (parsedSettings && typeof parsedSettings === 'object') {
+        sponsorTarget = parsedSettings.sponsorTarget || 0;
+      }
+    }
+
+    console.log(`✅ Dati locali caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
   } catch (error) {
-    console.error(`❌ Errore caricamento ${key}:`, error);
-    return defaultValue;
+    console.error('❌ Errore caricamento localStorage:', error);
+    // Mantieni i valori di default se il caricamento fallisce
   }
 }
 
@@ -128,34 +178,8 @@ function saveAllData() {
   return dataSuccess && teamSuccess && settingsSuccess;
 }
 
-function loadAllData() {
-  // Carica i dati principali
-  const savedData = loadFromStorage('data');
-  if (savedData && typeof savedData === 'object') {
-    appData = {
-      contatti: savedData.contatti || [],
-      location: savedData.location || [],
-      sponsor: savedData.sponsor || []
-    };
-  }
-
-  // Carica i membri del team
-  const savedTeam = loadFromStorage('team');
-  if (savedTeam && Array.isArray(savedTeam) && savedTeam.length === 3) {
-    teamMembers = savedTeam;
-  }
-
-  // Carica le impostazioni
-  const savedSettings = loadFromStorage('settings');
-  if (savedSettings && typeof savedSettings === 'object') {
-    sponsorTarget = savedSettings.sponsorTarget || 0;
-  }
-
-  console.log(`✅ Dati caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
-}
-
-// ========== SISTEMA DI AUTENTICAZIONE ==========
-function handleLogin(event) {
+// ========== SISTEMA DI AUTENTICAZIONE CORRETTO ==========
+async function handleLogin(event) {
   event.preventDefault();
 
   const passwordInput = document.getElementById('password-input');
@@ -167,11 +191,19 @@ function handleLogin(event) {
     document.getElementById('login-screen').style.display = 'none';
     document.getElementById('main-app').style.display = 'flex';
 
-    // Inizializza Firebase e carica dati
-    initFirebase();
-    initializeApp();
+    try {
+      // PRIMA inizializza Firebase e aspetta che finisca
+      await initFirebase();
 
-    console.log('🚀 Login riuscito - App inizializzata');
+      // POI inizializza l'interfaccia con i dati caricati
+      initializeApp();
+
+      console.log('🚀 Login riuscito - App completamente inizializzata');
+    } catch (error) {
+      console.error('❌ Errore durante inizializzazione:', error);
+      // Anche in caso di errore, mostra l'app con i dati locali
+      initializeApp();
+    }
   } else {
     // Login fallito
     errorDiv.style.display = 'block';
@@ -208,7 +240,7 @@ function initializeApp() {
   // Setup event listeners
   setupEventListeners();
 
-  console.log('✅ App completamente inizializzata');
+  console.log('✅ App completamente inizializzata con dati persistenti');
 }
 
 function setupEventListeners() {
@@ -235,6 +267,7 @@ function setupEventListeners() {
   // Form submit listener
   const loginForm = document.querySelector('.login-form');
   if (loginForm) {
+    loginForm.removeEventListener('submit', handleLogin); // Rimuovi listener duplicati
     loginForm.addEventListener('submit', handleLogin);
   }
 
@@ -264,11 +297,13 @@ function showFirebaseStats() {
     contatti: appData.contatti.length,
     location: appData.location.length, 
     sponsor: appData.sponsor.length,
-    lastSync: new Date().toLocaleString()
+    lastSync: new Date().toLocaleString(),
+    localStorage: 'Disponibile'
   };
 
   const message = `📊 Statistiche Sync:\n` +
     `Firebase: ${stats.firebase}\n` +
+    `LocalStorage: ${stats.localStorage}\n` +
     `Contatti: ${stats.contatti}\n` +
     `Location: ${stats.location}\n` +
     `Sponsor: ${stats.sponsor}\n` +
@@ -279,9 +314,13 @@ function showFirebaseStats() {
 
 // ========== GESTIONE TEAM ==========
 function updateTeamInputsFromData() {
-  document.getElementById('membro1-input').value = teamMembers[0] || '';
-  document.getElementById('membro2-input').value = teamMembers[1] || '';
-  document.getElementById('membro3-input').value = teamMembers[2] || '';
+  const input1 = document.getElementById('membro1-input');
+  const input2 = document.getElementById('membro2-input');
+  const input3 = document.getElementById('membro3-input');
+
+  if (input1) input1.value = teamMembers[0] || '';
+  if (input2) input2.value = teamMembers[1] || '';
+  if (input3) input3.value = teamMembers[2] || '';
 }
 
 function updateTeamPreview() {
@@ -309,9 +348,9 @@ function updateTeamPreview() {
 }
 
 function saveSettings() {
-  const membro1 = document.getElementById('membro1-input').value.trim() || 'Membro 1';
-  const membro2 = document.getElementById('membro2-input').value.trim() || 'Membro 2';
-  const membro3 = document.getElementById('membro3-input').value.trim() || 'Membro 3';
+  const membro1 = document.getElementById('membro1-input')?.value?.trim() || 'Membro 1';
+  const membro2 = document.getElementById('membro2-input')?.value?.trim() || 'Membro 2';
+  const membro3 = document.getElementById('membro3-input')?.value?.trim() || 'Membro 3';
 
   teamMembers = [membro1, membro2, membro3];
 
@@ -482,12 +521,14 @@ function updateContattiTable() {
   const emptyState = document.getElementById('contatti-empty-state');
   const table = document.getElementById('contatti-table');
 
+  if (!tableBody) return; // Safety check
+
   if (appData.contatti.length === 0) {
-    table.style.display = 'none';
-    emptyState.style.display = 'block';
+    if (table) table.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'block';
   } else {
-    table.style.display = 'table';
-    emptyState.style.display = 'none';
+    if (table) table.style.display = 'table';
+    if (emptyState) emptyState.style.display = 'none';
 
     tableBody.innerHTML = appData.contatti.map(contatto => `
       <tr class="table-row">
@@ -533,12 +574,14 @@ function updateLocationTable() {
   const emptyState = document.getElementById('location-empty-state');
   const table = document.getElementById('location-table');
 
+  if (!tableBody) return; // Safety check
+
   if (appData.location.length === 0) {
-    table.style.display = 'none';
-    emptyState.style.display = 'block';
+    if (table) table.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'block';
   } else {
-    table.style.display = 'table';
-    emptyState.style.display = 'none';
+    if (table) table.style.display = 'table';
+    if (emptyState) emptyState.style.display = 'none';
 
     tableBody.innerHTML = appData.location.map(location => {
       const budgetBase = parseFloat(location.budgetBase) || 0;
@@ -554,7 +597,7 @@ function updateLocationTable() {
         <td><input type="number" value="${location.capienza}" onchange="updateLocation('${location.id}', 'capienza', this.value)"></td>
         <td><input type="number" value="${location.budgetBase}" onchange="updateLocation('${location.id}', 'budgetBase', this.value)"></td>
         <td><input type="number" value="${location.costiAggiuntivi}" onchange="updateLocation('${location.id}', 'costiAggiuntivi', this.value)"></td>
-        <td style="font-weight: 600; color: #1e40af;">€${totale.toLocaleString()}</td>
+        <td style="font-weight: 600; color: #3498db;">€${totale.toLocaleString()}</td>
         <td><input type="text" value="${location.orari}" onchange="updateLocation('${location.id}', 'orari', this.value)"></td>
         <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)" placeholder="Es: Proiettori, Audio, WiFi"></td>
         <td>
@@ -598,12 +641,14 @@ function updateSponsorTable() {
   const emptyState = document.getElementById('sponsor-empty-state');
   const table = document.getElementById('sponsor-table');
 
+  if (!tableBody) return; // Safety check
+
   if (appData.sponsor.length === 0) {
-    table.style.display = 'none';
-    emptyState.style.display = 'block';
+    if (table) table.style.display = 'none';
+    if (emptyState) emptyState.style.display = 'block';
   } else {
-    table.style.display = 'table';
-    emptyState.style.display = 'none';
+    if (table) table.style.display = 'table';
+    if (emptyState) emptyState.style.display = 'none';
 
     tableBody.innerHTML = appData.sponsor.map(sponsor => `
       <tr class="table-row">
@@ -647,17 +692,26 @@ function updateSponsorTable() {
 
 // ========== DASHBOARD E STATISTICHE ==========
 function updateDashboardStats() {
-  document.getElementById('total-contatti').textContent = appData.contatti.length;
-  document.getElementById('total-location').textContent = appData.location.length;
-  document.getElementById('total-sponsor').textContent = appData.sponsor.length;
+  // Safely update elements
+  const totalContatti = document.getElementById('total-contatti');
+  const totalLocation = document.getElementById('total-location');
+  const totalSponsor = document.getElementById('total-sponsor');
+
+  if (totalContatti) totalContatti.textContent = appData.contatti.length;
+  if (totalLocation) totalLocation.textContent = appData.location.length;
+  if (totalSponsor) totalSponsor.textContent = appData.sponsor.length;
 
   const contattiConfermati = appData.contatti.filter(c => c.stato === 'Confermato').length;
   const locationConfermate = appData.location.filter(l => l.status === 'Confermato').length;
   const sponsorConfermati = appData.sponsor.filter(s => s.status === 'Confermato').length;
 
-  document.getElementById('contatti-confermati').textContent = contattiConfermati;
-  document.getElementById('location-confermate').textContent = locationConfermate;
-  document.getElementById('sponsor-confermati').textContent = sponsorConfermati;
+  const contattiConfEl = document.getElementById('contatti-confermati');
+  const locationConfEl = document.getElementById('location-confermate');
+  const sponsorConfEl = document.getElementById('sponsor-confermati');
+
+  if (contattiConfEl) contattiConfEl.textContent = contattiConfermati;
+  if (locationConfEl) locationConfEl.textContent = locationConfermate;
+  if (sponsorConfEl) sponsorConfEl.textContent = sponsorConfermati;
 
   const totalSponsorValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
@@ -667,11 +721,15 @@ function updateDashboardStats() {
     .filter(s => s.status === 'Confermato' && s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
 
-  document.getElementById('valore-sponsor').textContent = `€${totalSponsorValue.toLocaleString()}`;
-  document.getElementById('valore-confermato').textContent = `€${confirmedSponsorValue.toLocaleString()}`;
+  const valoreSponsorEl = document.getElementById('valore-sponsor');
+  const valoreConfEl = document.getElementById('valore-confermato');
+
+  if (valoreSponsorEl) valoreSponsorEl.textContent = `€${totalSponsorValue.toLocaleString()}`;
+  if (valoreConfEl) valoreConfEl.textContent = `€${confirmedSponsorValue.toLocaleString()}`;
 
   const prioritaAlta = appData.contatti.filter(c => c.priorita === 'Alta').length;
-  document.getElementById('priorita-alta').textContent = prioritaAlta;
+  const prioritaEl = document.getElementById('priorita-alta');
+  if (prioritaEl) prioritaEl.textContent = prioritaAlta;
 }
 
 function updateSponsorStats() {
@@ -691,23 +749,32 @@ function updateSponsorStats() {
   const confirmedSponsors = appData.sponsor.filter(s => s.status === 'Confermato').length;
   const pendingSponsors = appData.sponsor.filter(s => s.status === 'In negoziazione').length;
 
-  document.getElementById('total-sponsorship-value').textContent = `€${totalValue.toLocaleString()}`;
-  document.getElementById('confirmed-sponsorship-value').textContent = `€${confirmedValue.toLocaleString()}`;
-  document.getElementById('pending-sponsorship-value').textContent = `€${pendingValue.toLocaleString()}`;
+  // Safely update elements
+  const elements = {
+    'total-sponsorship-value': `€${totalValue.toLocaleString()}`,
+    'confirmed-sponsorship-value': `€${confirmedValue.toLocaleString()}`,
+    'pending-sponsorship-value': `€${pendingValue.toLocaleString()}`,
+    'sponsor-breakdown': `${totalSponsors} sponsor totali`,
+    'confirmed-sponsor-breakdown': `${confirmedSponsors} sponsor confermati`,
+    'pending-sponsor-breakdown': `${pendingSponsors} sponsor in corso`
+  };
 
-  document.getElementById('sponsor-breakdown').textContent = `${totalSponsors} sponsor totali`;
-  document.getElementById('confirmed-sponsor-breakdown').textContent = `${confirmedSponsors} sponsor confermati`;
-  document.getElementById('pending-sponsor-breakdown').textContent = `${pendingSponsors} sponsor in corso`;
+  Object.entries(elements).forEach(([id, text]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = text;
+  });
 
   const targetInput = document.getElementById('sponsor-target');
   const currentTarget = parseFloat(targetInput?.value) || sponsorTarget;
   if (currentTarget > 0) {
     const percentage = Math.round((confirmedValue / currentTarget) * 100);
-    document.getElementById('target-progress').textContent = `${Math.min(percentage, 100)}%`;
+    const progressEl = document.getElementById('target-progress');
+    if (progressEl) progressEl.textContent = `${Math.min(percentage, 100)}%`;
     sponsorTarget = currentTarget;
     saveAllData();
   } else {
-    document.getElementById('target-progress').textContent = '0%';
+    const progressEl = document.getElementById('target-progress');
+    if (progressEl) progressEl.textContent = '0%';
   }
 }
 
@@ -717,6 +784,8 @@ let locationComparisonVisible = false;
 function toggleLocationComparison() {
   const container = document.getElementById('location-comparison');
   const btn = document.getElementById('compare-btn');
+
+  if (!container || !btn) return;
 
   locationComparisonVisible = !locationComparisonVisible;
 
@@ -759,6 +828,8 @@ function generateComparison() {
   const selectedLocations = appData.location.filter(loc => selectedIds.includes(loc.id));
   const resultsContainer = document.getElementById('comparison-results');
   const table = document.getElementById('comparison-table');
+
+  if (!resultsContainer || !table) return;
 
   const headers = ['Caratteristica', ...selectedLocations.map(loc => loc.nome || 'Senza nome')];
 
@@ -822,8 +893,12 @@ function switchTab(tabName) {
     btn.classList.remove('active');
   });
 
-  document.getElementById(`${tabName}-tab`).classList.add('active');
-  event.target.classList.add('active');
+  const targetTab = document.getElementById(`${tabName}-tab`);
+  if (targetTab) targetTab.classList.add('active');
+
+  if (event && event.target) {
+    event.target.classList.add('active');
+  }
 }
 
 function searchTable(tableType, searchTerm) {
@@ -846,7 +921,7 @@ function exportData() {
     settings: { sponsorTarget },
     firebase: { connected: isFirebaseConnected },
     exportDate: new Date().toISOString(),
-    version: "3.0-Firebase"
+    version: "3.1-Fixed"
   };
 
   const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -854,7 +929,7 @@ function exportData() {
 
   const link = document.createElement('a');
   link.href = URL.createObjectURL(dataBlob);
-  link.download = `event-management-firebase-backup-${new Date().toISOString().split('T')[0]}.json`;
+  link.download = `event-management-backup-${new Date().toISOString().split('T')[0]}.json`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
