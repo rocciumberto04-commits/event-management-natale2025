@@ -1,17 +1,12 @@
-// ========== CONFIGURAZIONE FIREBASE ==========
-const firebaseConfig = {
-  apiKey: "AIzaSyDGlEgl_demo_key_replace_this",
-  authDomain: "event-management-demo.firebaseapp.com", 
-  databaseURL: "https://event-management-demo-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "event-management-demo",
-  storageBucket: "event-management-demo.appspot.com",
-  messagingSenderId: "123456789012",
-  appId: "1:123456789012:web:demo123456789abcdef"
-};
+// ========== CONFIGURAZIONE FIREBASE MODERNA ==========
+// Firebase è già inizializzato nell'HTML con la tua config reale
+// Utilizziamo le variabili globali firebaseApp e firebaseDatabase
+
+// Import moderni Firebase v12 (già caricati nell'HTML)
+import { ref, set, get, onValue, off } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
 // ========== VARIABILI GLOBALI ==========
 const CORRECT_PASSWORD = "cenaNataleMorosini2025";
-let firebaseApp;
 let database;
 let isFirebaseConnected = false;
 
@@ -33,51 +28,188 @@ const OPTIONS = {
   statusSponsor: ['Da contattare', 'Proposta inviata', 'In negoziazione', 'Confermato', 'Declinato']
 };
 
-// ========== INIZIALIZZAZIONE FIREBASE CORRETTA ==========
+// ========== INIZIALIZZAZIONE FIREBASE MODERNA ==========
 async function initFirebase() {
   return new Promise((resolve) => {
     try {
-      console.log('🔥 Inizializzazione Firebase...');
-      updateSyncStatus('connecting', 'Connessione a Firebase...');
+      console.log('🔥 Inizializzazione Firebase moderna...');
+      updateSyncStatus('connecting', 'Connessione Firebase...');
 
-      // Prima carica dati locali come fallback immediato
+      // Prima carica dati locali come fallback
       loadFromLocalStorage();
 
-      // Simula connessione Firebase (da sostituire con codice reale)
-      setTimeout(() => {
-        try {
-          // firebaseApp = firebase.initializeApp(firebaseConfig);
-          // database = firebase.database();
+      // Usa le variabili globali definite nell'HTML
+      database = window.firebaseDatabase;
 
-          // Simula caricamento dati da Firebase
-          // database.ref('data').once('value', snapshot => {
-          //   const firebaseData = snapshot.val();
-          //   if (firebaseData) {
-          //     appData = firebaseData;
-          //   }
-          // });
+      if (!database) {
+        throw new Error('Firebase database non disponibile');
+      }
 
+      console.log('🔥 Firebase database ottenuto');
+
+      // TEST CONNESSIONE con timeout
+      const timeout = setTimeout(() => {
+        console.warn('⚠️ Timeout Firebase - uso localStorage');
+        updateSyncStatus('error', 'Modalità offline');
+        resolve();
+      }, 10000); // 10 secondi timeout
+
+      // Test connessione con .info/connected
+      const connectedRef = ref(database, '.info/connected');
+      onValue(connectedRef, (snapshot) => {
+        clearTimeout(timeout);
+
+        if (snapshot.val() === true) {
+          console.log('✅ Firebase connesso - carico dati cloud');
           isFirebaseConnected = true;
           updateSyncStatus('connected', 'Sincronizzato ☁️');
-          console.log('✅ Firebase connesso (modalità demo)');
 
-          setupFirebaseListeners();
-          resolve(); // Risolvi la Promise solo dopo aver caricato i dati
-        } catch (error) {
-          console.error('❌ Errore Firebase:', error);
+          // Carica dati da Firebase
+          loadFromFirebase().then(() => {
+            setupRealTimeListeners();
+            resolve();
+          });
+        } else {
+          console.warn('❌ Firebase disconnesso - uso localStorage');
           updateSyncStatus('error', 'Modalità offline');
-          isFirebaseConnected = false;
-          resolve(); // Risolvi comunque per non bloccare l'app
+          resolve();
         }
-      }, 1500); // Ridotto timeout per esperienza più veloce
+      });
 
     } catch (error) {
       console.error('❌ Errore inizializzazione Firebase:', error);
-      updateSyncStatus('error', 'Errore connessione');
-      loadFromLocalStorage(); // Fallback completo a localStorage
+      updateSyncStatus('error', 'Errore Firebase');
       resolve();
     }
   });
+}
+
+// ========== CARICAMENTO DATI DA FIREBASE MODERNO ==========
+async function loadFromFirebase() {
+  return new Promise((resolve) => {
+    try {
+      if (!database) {
+        resolve();
+        return;
+      }
+
+      const promises = [
+        get(ref(database, 'eventData/data')),
+        get(ref(database, 'eventData/team')),
+        get(ref(database, 'eventData/settings'))
+      ];
+
+      Promise.all(promises).then(([dataSnapshot, teamSnapshot, settingsSnapshot]) => {
+        // Carica dati principali
+        if (dataSnapshot.exists()) {
+          const cloudData = dataSnapshot.val();
+          if (cloudData && typeof cloudData === 'object') {
+            appData = {
+              contatti: cloudData.contatti || [],
+              location: cloudData.location || [],
+              sponsor: cloudData.sponsor || []
+            };
+            console.log(`☁️ Dati cloud caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
+          }
+        }
+
+        // Carica team
+        if (teamSnapshot.exists()) {
+          const cloudTeam = teamSnapshot.val();
+          if (cloudTeam && Array.isArray(cloudTeam)) {
+            teamMembers = cloudTeam;
+            console.log('☁️ Team cloud caricato:', teamMembers);
+          }
+        }
+
+        // Carica settings
+        if (settingsSnapshot.exists()) {
+          const cloudSettings = settingsSnapshot.val();
+          if (cloudSettings && typeof cloudSettings === 'object') {
+            sponsorTarget = cloudSettings.sponsorTarget || 0;
+            console.log('☁️ Settings cloud caricati');
+          }
+        }
+
+        resolve();
+      }).catch(error => {
+        console.error('❌ Errore caricamento da Firebase:', error);
+        resolve();
+      });
+
+    } catch (error) {
+      console.error('❌ Errore loadFromFirebase:', error);
+      resolve();
+    }
+  });
+}
+
+// ========== LISTENER REAL-TIME MODERNI ==========
+function setupRealTimeListeners() {
+  if (!database || !isFirebaseConnected) return;
+
+  try {
+    // Listener per dati principali
+    const dataRef = ref(database, 'eventData/data');
+    onValue(dataRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const newData = snapshot.val();
+        if (newData && typeof newData === 'object') {
+          const oldLength = appData.contatti.length + appData.location.length + appData.sponsor.length;
+
+          appData = {
+            contatti: newData.contatti || [],
+            location: newData.location || [],
+            sponsor: newData.sponsor || []
+          };
+
+          const newLength = appData.contatti.length + appData.location.length + appData.sponsor.length;
+
+          if (newLength !== oldLength) {
+            console.log('🔄 Dati aggiornati in real-time');
+            updateAllTables();
+            updateDashboardStats();
+            updateSponsorStats();
+            updateLocationCheckboxes();
+            showNotification('📡 Dati sincronizzati automaticamente', 'success');
+          }
+        }
+      }
+    });
+
+    // Listener per team
+    const teamRef = ref(database, 'eventData/team');
+    onValue(teamRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const newTeam = snapshot.val();
+        if (newTeam && Array.isArray(newTeam)) {
+          teamMembers = newTeam;
+          updateTeamInputsFromData();
+          updateTeamPreview();
+          updateAllTables(); // Per aggiornare i dropdown "Assegnato a"
+        }
+      }
+    });
+
+    // Listener per settings
+    const settingsRef = ref(database, 'eventData/settings');
+    onValue(settingsRef, (snapshot) => {
+      if (snapshot.exists()) {
+        const newSettings = snapshot.val();
+        if (newSettings && typeof newSettings === 'object') {
+          sponsorTarget = newSettings.sponsorTarget || 0;
+          const targetInput = document.getElementById('sponsor-target');
+          if (targetInput) targetInput.value = sponsorTarget;
+          updateSponsorStats();
+        }
+      }
+    });
+
+    console.log('🔄 Listeners real-time attivati');
+
+  } catch (error) {
+    console.error('❌ Errore setup listeners:', error);
+  }
 }
 
 function updateSyncStatus(status, text) {
@@ -90,38 +222,44 @@ function updateSyncStatus(status, text) {
   }
 }
 
-function setupFirebaseListeners() {
-  // Qui si configurerebbero i listener Firebase per sync real-time
-  // Per ora usiamo localStorage come fallback
-  console.log('🔄 Listeners Firebase configurati (demo mode)');
-}
-
-// ========== GESTIONE DATI MIGLIORATA ==========
+// ========== SALVATAGGIO SU FIREBASE MODERNO ==========
 function saveToFirebase(path, data) {
-  if (isFirebaseConnected && database) {
-    try {
-      // database.ref(path).set(data);
-      console.log(`☁️ Dati salvati su Firebase: ${path}`);
-      showSaveIndicator('☁️ Sincronizzato');
+  return new Promise((resolve) => {
+    if (isFirebaseConnected && database) {
+      try {
+        const dbRef = ref(database, `eventData/${path}`);
+        set(dbRef, data).then(() => {
+          console.log(`☁️ Salvato su Firebase: ${path}`);
+          showSaveIndicator('☁️ Sincronizzato');
 
-      // Salva anche localmente come backup
+          // Salva anche localmente come backup
+          saveToLocalStorage(path, data);
+          resolve(true);
+        }).catch(error => {
+          console.error(`❌ Errore salvataggio Firebase ${path}:`, error);
+          saveToLocalStorage(path, data);
+          resolve(false);
+        });
+      } catch (error) {
+        console.error(`❌ Errore Firebase ${path}:`, error);
+        saveToLocalStorage(path, data);
+        resolve(false);
+      }
+    } else {
       saveToLocalStorage(path, data);
-      return true;
-    } catch (error) {
-      console.error('❌ Errore salvataggio Firebase:', error);
-      return saveToLocalStorage(path, data);
+      resolve(false);
     }
-  } else {
-    return saveToLocalStorage(path, data);
-  }
+  });
 }
 
 function saveToLocalStorage(key, data) {
   try {
     const serialized = JSON.stringify(data);
     localStorage.setItem(`eventManagement_${key}`, serialized);
-    console.log(`💾 Dati salvati localmente: ${key}`);
-    showSaveIndicator('💾 Salvato localmente');
+    console.log(`💾 Salvato localmente: ${key}`);
+    if (!isFirebaseConnected) {
+      showSaveIndicator('💾 Salvato localmente');
+    }
     return true;
   } catch (error) {
     console.error(`❌ Errore salvataggio locale ${key}:`, error);
@@ -163,22 +301,24 @@ function loadFromLocalStorage() {
       }
     }
 
-    console.log(`✅ Dati locali caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
+    console.log(`💾 Dati locali caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
   } catch (error) {
     console.error('❌ Errore caricamento localStorage:', error);
-    // Mantieni i valori di default se il caricamento fallisce
   }
 }
 
-function saveAllData() {
-  const dataSuccess = saveToFirebase('data', appData);
-  const teamSuccess = saveToFirebase('team', teamMembers);
-  const settingsSuccess = saveToFirebase('settings', { sponsorTarget });
+async function saveAllData() {
+  const promises = [
+    saveToFirebase('data', appData),
+    saveToFirebase('team', teamMembers),
+    saveToFirebase('settings', { sponsorTarget })
+  ];
 
-  return dataSuccess && teamSuccess && settingsSuccess;
+  const results = await Promise.all(promises);
+  return results.some(result => result); // True se almeno uno è andato a buon fine
 }
 
-// ========== SISTEMA DI AUTENTICAZIONE CORRETTO ==========
+// ========== SISTEMA DI AUTENTICAZIONE ==========
 async function handleLogin(event) {
   event.preventDefault();
 
@@ -210,7 +350,6 @@ async function handleLogin(event) {
     passwordInput.value = '';
     passwordInput.focus();
 
-    // Nascondi errore dopo 3 secondi
     setTimeout(() => {
       errorDiv.style.display = 'none';
     }, 3000);
@@ -219,6 +358,15 @@ async function handleLogin(event) {
 
 function logout() {
   if (confirm('Sei sicuro di voler uscire dal sistema?')) {
+    // Disconnetti listeners Firebase
+    if (database && isFirebaseConnected) {
+      try {
+        off(ref(database, 'eventData'));
+      } catch (error) {
+        console.warn('Errore disconnessione listeners:', error);
+      }
+    }
+
     document.getElementById('main-app').style.display = 'none';
     document.getElementById('login-screen').style.display = 'flex';
     document.getElementById('password-input').value = '';
@@ -229,18 +377,15 @@ function logout() {
 
 // ========== INIZIALIZZAZIONE APP ==========
 function initializeApp() {
-  // Aggiorna interfaccia con dati caricati
   updateTeamInputsFromData();
   updateTeamPreview();
   updateAllTables();
   updateDashboardStats();
   updateSponsorStats();
   updateLocationCheckboxes();
-
-  // Setup event listeners
   setupEventListeners();
 
-  console.log('✅ App completamente inizializzata con dati persistenti');
+  console.log('✅ App completamente inizializzata');
 }
 
 function setupEventListeners() {
@@ -256,7 +401,6 @@ function setupEventListeners() {
     }
   });
 
-  // Team preview update listeners
   ['membro1-input', 'membro2-input', 'membro3-input'].forEach(id => {
     const element = document.getElementById(id);
     if (element) {
@@ -264,14 +408,12 @@ function setupEventListeners() {
     }
   });
 
-  // Form submit listener
   const loginForm = document.querySelector('.login-form');
   if (loginForm) {
-    loginForm.removeEventListener('submit', handleLogin); // Rimuovi listener duplicati
+    loginForm.removeEventListener('submit', handleLogin);
     loginForm.addEventListener('submit', handleLogin);
   }
 
-  // Sponsor target listener
   const targetInput = document.getElementById('sponsor-target');
   if (targetInput) {
     targetInput.value = sponsorTarget;
@@ -282,32 +424,47 @@ function setupEventListeners() {
 function testFirebaseConnection() {
   showNotification('🔍 Test connessione Firebase...', 'info');
 
-  setTimeout(() => {
-    if (isFirebaseConnected) {
-      showNotification('✅ Firebase connesso correttamente!', 'success');
-    } else {
-      showNotification('⚠️ Modalità offline - dati salvati localmente', 'warning');
-    }
-  }, 1000);
+  if (isFirebaseConnected && database) {
+    // Test scrittura/lettura Firebase
+    const testData = { test: Date.now() };
+    const testRef = ref(database, 'eventData/test');
+
+    set(testRef, testData).then(() => {
+      return get(testRef);
+    }).then((snapshot) => {
+      if (snapshot.exists() && snapshot.val().test === testData.test) {
+        showNotification('✅ Firebase completamente funzionante!', 'success');
+        set(testRef, null); // Cleanup
+      } else {
+        showNotification('⚠️ Firebase lettura/scrittura non funziona', 'warning');
+      }
+    }).catch((error) => {
+      console.error('❌ Test Firebase fallito:', error);
+      showNotification('❌ Test Firebase fallito: ' + error.message, 'error');
+    });
+  } else {
+    showNotification('⚠️ Firebase non connesso - dati solo locali', 'warning');
+  }
 }
 
 function showFirebaseStats() {
   const stats = {
-    firebase: isFirebaseConnected ? 'Connesso' : 'Offline',
+    firebase: isFirebaseConnected ? 'Connesso ✅' : 'Offline ❌',
     contatti: appData.contatti.length,
     location: appData.location.length, 
     sponsor: appData.sponsor.length,
     lastSync: new Date().toLocaleString(),
-    localStorage: 'Disponibile'
+    localStorage: 'Disponibile ✅'
   };
 
-  const message = `📊 Statistiche Sync:\n` +
-    `Firebase: ${stats.firebase}\n` +
-    `LocalStorage: ${stats.localStorage}\n` +
-    `Contatti: ${stats.contatti}\n` +
-    `Location: ${stats.location}\n` +
-    `Sponsor: ${stats.sponsor}\n` +
-    `Ultimo sync: ${stats.lastSync}`;
+  const message = `📊 Statistiche Sincronizzazione:\n\n` +
+    `🔥 Firebase: ${stats.firebase}\n` +
+    `💾 LocalStorage: ${stats.localStorage}\n\n` +
+    `📊 Dati attuali:\n` +
+    `👥 Contatti: ${stats.contatti}\n` +
+    `📍 Location: ${stats.location}\n` +
+    `💰 Sponsor: ${stats.sponsor}\n\n` +
+    `🕐 Ultimo aggiornamento: ${stats.lastSync}`;
 
   alert(message);
 }
@@ -337,7 +494,7 @@ function updateTeamPreview() {
       </div>
       <div class="team-member-preview">
         <span class="team-member-icon">👤</span>
-        <span>${membro2}</span>
+        <span>${membro3}</span>
       </div>
       <div class="team-member-preview">
         <span class="team-member-icon">👤</span>
@@ -347,17 +504,20 @@ function updateTeamPreview() {
   }
 }
 
-function saveSettings() {
+async function saveSettings() {
   const membro1 = document.getElementById('membro1-input')?.value?.trim() || 'Membro 1';
   const membro2 = document.getElementById('membro2-input')?.value?.trim() || 'Membro 2';
   const membro3 = document.getElementById('membro3-input')?.value?.trim() || 'Membro 3';
 
   teamMembers = [membro1, membro2, membro3];
 
-  if (saveAllData()) {
-    showNotification('✅ Configurazione team salvata e sincronizzata!', 'success');
+  const success = await saveAllData();
+  if (success || !isFirebaseConnected) {
+    showNotification('✅ Configurazione team salvata!', 'success');
     updateTeamPreview();
     updateAllTables();
+  } else {
+    showNotification('⚠️ Errore salvataggio - riprova', 'warning');
   }
 }
 
@@ -367,7 +527,7 @@ function generateId() {
 }
 
 // Contatti
-function addContatto() {
+async function addContatto() {
   const newContatto = {
     id: generateId(),
     nome: '',
@@ -386,25 +546,25 @@ function addContatto() {
   };
 
   appData.contatti.push(newContatto);
-  saveAllData();
+  await saveAllData();
   updateContattiTable();
   updateDashboardStats();
-  showNotification('Contatto aggiunto e sincronizzato', 'success');
+  showNotification('Contatto aggiunto', 'success');
 }
 
-function updateContatto(id, field, value) {
+async function updateContatto(id, field, value) {
   const contatto = appData.contatti.find(item => item.id === id);
   if (contatto) {
     contatto[field] = value;
-    saveAllData();
+    await saveAllData();
     updateDashboardStats();
   }
 }
 
-function deleteContatto(id) {
+async function deleteContatto(id) {
   if (confirm('Sei sicuro di voler eliminare questo contatto?')) {
     appData.contatti = appData.contatti.filter(item => item.id !== id);
-    saveAllData();
+    await saveAllData();
     updateContattiTable();
     updateDashboardStats();
     showNotification('Contatto eliminato', 'success');
@@ -412,7 +572,7 @@ function deleteContatto(id) {
 }
 
 // Location
-function addLocation() {
+async function addLocation() {
   const newLocation = {
     id: generateId(),
     nome: '',
@@ -433,26 +593,26 @@ function addLocation() {
   };
 
   appData.location.push(newLocation);
-  saveAllData();
+  await saveAllData();
   updateLocationTable();
   updateLocationCheckboxes();
   updateDashboardStats();
-  showNotification('Location aggiunta e sincronizzata', 'success');
+  showNotification('Location aggiunta', 'success');
 }
 
-function updateLocation(id, field, value) {
+async function updateLocation(id, field, value) {
   const location = appData.location.find(item => item.id === id);
   if (location) {
     location[field] = value;
-    saveAllData();
+    await saveAllData();
     updateDashboardStats();
   }
 }
 
-function deleteLocation(id) {
+async function deleteLocation(id) {
   if (confirm('Sei sicuro di voler eliminare questa location?')) {
     appData.location = appData.location.filter(item => item.id !== id);
-    saveAllData();
+    await saveAllData();
     updateLocationTable();
     updateLocationCheckboxes();
     updateDashboardStats();
@@ -461,7 +621,7 @@ function deleteLocation(id) {
 }
 
 // Sponsor
-function addSponsor() {
+async function addSponsor() {
   const newSponsor = {
     id: generateId(),
     nome: '',
@@ -481,27 +641,27 @@ function addSponsor() {
   };
 
   appData.sponsor.push(newSponsor);
-  saveAllData();
+  await saveAllData();
   updateSponsorTable();
   updateSponsorStats();
   updateDashboardStats();
-  showNotification('Sponsor aggiunto e sincronizzato', 'success');
+  showNotification('Sponsor aggiunto', 'success');
 }
 
-function updateSponsor(id, field, value) {
+async function updateSponsor(id, field, value) {
   const sponsor = appData.sponsor.find(item => item.id === id);
   if (sponsor) {
     sponsor[field] = value;
-    saveAllData();
+    await saveAllData();
     updateSponsorStats();
     updateDashboardStats();
   }
 }
 
-function deleteSponsor(id) {
+async function deleteSponsor(id) {
   if (confirm('Sei sicuro di voler eliminare questo sponsor?')) {
     appData.sponsor = appData.sponsor.filter(item => item.id !== id);
-    saveAllData();
+    await saveAllData();
     updateSponsorTable();
     updateSponsorStats();
     updateDashboardStats();
@@ -521,7 +681,7 @@ function updateContattiTable() {
   const emptyState = document.getElementById('contatti-empty-state');
   const table = document.getElementById('contatti-table');
 
-  if (!tableBody) return; // Safety check
+  if (!tableBody) return;
 
   if (appData.contatti.length === 0) {
     if (table) table.style.display = 'none';
@@ -574,7 +734,7 @@ function updateLocationTable() {
   const emptyState = document.getElementById('location-empty-state');
   const table = document.getElementById('location-table');
 
-  if (!tableBody) return; // Safety check
+  if (!tableBody) return;
 
   if (appData.location.length === 0) {
     if (table) table.style.display = 'none';
@@ -597,9 +757,9 @@ function updateLocationTable() {
         <td><input type="number" value="${location.capienza}" onchange="updateLocation('${location.id}', 'capienza', this.value)"></td>
         <td><input type="number" value="${location.budgetBase}" onchange="updateLocation('${location.id}', 'budgetBase', this.value)"></td>
         <td><input type="number" value="${location.costiAggiuntivi}" onchange="updateLocation('${location.id}', 'costiAggiuntivi', this.value)"></td>
-        <td style="font-weight: 600; color: #3498db;">€${totale.toLocaleString()}</td>
+        <td style="font-weight: 600; color: #1d4ed8;">€${totale.toLocaleString()}</td>
         <td><input type="text" value="${location.orari}" onchange="updateLocation('${location.id}', 'orari', this.value)"></td>
-        <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)" placeholder="Es: Proiettori, Audio, WiFi"></td>
+        <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)"></td>
         <td>
           <select onchange="updateLocation('${location.id}', 'catering', this.value)">
             <option value="Si" ${location.catering === 'Si' ? 'selected' : ''}>Si</option>
@@ -641,7 +801,7 @@ function updateSponsorTable() {
   const emptyState = document.getElementById('sponsor-empty-state');
   const table = document.getElementById('sponsor-table');
 
-  if (!tableBody) return; // Safety check
+  if (!tableBody) return;
 
   if (appData.sponsor.length === 0) {
     if (table) table.style.display = 'none';
@@ -692,26 +852,19 @@ function updateSponsorTable() {
 
 // ========== DASHBOARD E STATISTICHE ==========
 function updateDashboardStats() {
-  // Safely update elements
-  const totalContatti = document.getElementById('total-contatti');
-  const totalLocation = document.getElementById('total-location');
-  const totalSponsor = document.getElementById('total-sponsor');
+  const elements = {
+    'total-contatti': appData.contatti.length,
+    'total-location': appData.location.length,
+    'total-sponsor': appData.sponsor.length,
+    'contatti-confermati': appData.contatti.filter(c => c.stato === 'Confermato').length,
+    'location-confermate': appData.location.filter(l => l.status === 'Confermato').length,
+    'sponsor-confermati': appData.sponsor.filter(s => s.status === 'Confermato').length
+  };
 
-  if (totalContatti) totalContatti.textContent = appData.contatti.length;
-  if (totalLocation) totalLocation.textContent = appData.location.length;
-  if (totalSponsor) totalSponsor.textContent = appData.sponsor.length;
-
-  const contattiConfermati = appData.contatti.filter(c => c.stato === 'Confermato').length;
-  const locationConfermate = appData.location.filter(l => l.status === 'Confermato').length;
-  const sponsorConfermati = appData.sponsor.filter(s => s.status === 'Confermato').length;
-
-  const contattiConfEl = document.getElementById('contatti-confermati');
-  const locationConfEl = document.getElementById('location-confermate');
-  const sponsorConfEl = document.getElementById('sponsor-confermati');
-
-  if (contattiConfEl) contattiConfEl.textContent = contattiConfermati;
-  if (locationConfEl) locationConfEl.textContent = locationConfermate;
-  if (sponsorConfEl) sponsorConfEl.textContent = sponsorConfermati;
+  Object.entries(elements).forEach(([id, value]) => {
+    const el = document.getElementById(id);
+    if (el) el.textContent = value;
+  });
 
   const totalSponsorValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
@@ -732,7 +885,7 @@ function updateDashboardStats() {
   if (prioritaEl) prioritaEl.textContent = prioritaAlta;
 }
 
-function updateSponsorStats() {
+async function updateSponsorStats() {
   const totalValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
@@ -749,7 +902,6 @@ function updateSponsorStats() {
   const confirmedSponsors = appData.sponsor.filter(s => s.status === 'Confermato').length;
   const pendingSponsors = appData.sponsor.filter(s => s.status === 'In negoziazione').length;
 
-  // Safely update elements
   const elements = {
     'total-sponsorship-value': `€${totalValue.toLocaleString()}`,
     'confirmed-sponsorship-value': `€${confirmedValue.toLocaleString()}`,
@@ -770,8 +922,10 @@ function updateSponsorStats() {
     const percentage = Math.round((confirmedValue / currentTarget) * 100);
     const progressEl = document.getElementById('target-progress');
     if (progressEl) progressEl.textContent = `${Math.min(percentage, 100)}%`;
-    sponsorTarget = currentTarget;
-    saveAllData();
+    if (sponsorTarget !== currentTarget) {
+      sponsorTarget = currentTarget;
+      await saveAllData();
+    }
   } else {
     const progressEl = document.getElementById('target-progress');
     if (progressEl) progressEl.textContent = '0%';
@@ -919,9 +1073,12 @@ function exportData() {
     teamMembers: teamMembers,
     data: appData,
     settings: { sponsorTarget },
-    firebase: { connected: isFirebaseConnected },
+    firebase: { 
+      connected: isFirebaseConnected,
+      project: 'event-management-assomor-a7b0f'
+    },
     exportDate: new Date().toISOString(),
-    version: "3.1-Fixed"
+    version: "5.0-ModernFirebase"
   };
 
   const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -986,10 +1143,16 @@ function showNotification(message, type = 'info') {
 
 // ========== INIZIALIZZAZIONE ==========
 document.addEventListener('DOMContentLoaded', function() {
-  console.log('🚀 Sistema Event Management con Firebase avviato');
+  console.log('🚀 Sistema Event Management con Firebase moderno avviato');
 
   if (typeof Storage === 'undefined') {
     alert('⚠️ Il tuo browser non supporta il salvataggio automatico.');
+  }
+
+  // Controlla se Firebase è disponibile
+  if (!window.firebaseApp || !window.firebaseDatabase) {
+    console.error('❌ Firebase non inizializzato correttamente');
+    alert('❌ Errore: Firebase non inizializzato. Controlla la connessione internet.');
   }
 
   const passwordInput = document.getElementById('password-input');
