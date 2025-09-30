@@ -6,6 +6,10 @@
     <title>Event Management System</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -51,8 +55,12 @@
                 <h1>📊 Event Management Dashboard</h1>
             </div>
             <div class="header-actions">
+                <div class="sync-status" id="sync-status">
+                    <span class="sync-icon">🔄</span>
+                    <span id="sync-text">Sincronizzazione...</span>
+                </div>
                 <div class="save-indicator" id="save-indicator" style="display: none;">
-                    ✅ Salvato automaticamente
+                    ☁️ Sincronizzato
                 </div>
                 <button class="btn btn--sm btn--outline" onclick="exportData()">
                     📤 Esporta
@@ -120,24 +128,30 @@
                                 </div>
                             </div>
 
-                            <!-- SEZIONE SINCRONIZZAZIONE -->
+                            <!-- SEZIONE SINCRONIZZAZIONE FIREBASE -->
                             <div class="sync-section">
-                                <h3>🔄 Sincronizzazione Team</h3>
-                                <div class="sync-warning">
-                                    <div class="warning-icon">⚠️</div>
-                                    <div class="warning-content">
-                                        <h4>IMPORTANTE: Condivisione Dati</h4>
-                                        <p><strong>Attualmente i dati sono salvati localmente</strong> nel browser di ciascun utente.</p>
-                                        <p>Se vuoi che tutto il team veda gli stessi dati in tempo reale, è necessario attivare la sincronizzazione cloud.</p>
+                                <h3>☁️ Sincronizzazione Team Attiva</h3>
+                                <div class="sync-success">
+                                    <div class="success-icon">✅</div>
+                                    <div class="success-content">
+                                        <h4>Firebase Realtime Database Connesso</h4>
+                                        <p><strong>I dati sono ora sincronizzati automaticamente</strong> tra tutti i dispositivi del team.</p>
+                                        <p>Quando qualcuno modifica contatti, location o sponsor, tutti gli altri membri vedranno le modifiche istantaneamente.</p>
                                         <ul>
-                                            <li>✅ <strong>localStorage</strong>: Dati privati per dispositivo</li>
-                                            <li>🔄 <strong>Firebase Sync</strong>: Dati condivisi team (da attivare)</li>
+                                            <li>✅ <strong>Sincronizzazione automatica</strong> in tempo reale</li>
+                                            <li>✅ <strong>Backup cloud</strong> automatico</li>
+                                            <li>✅ <strong>Accesso multi-dispositivo</strong> con stessi dati</li>
                                         </ul>
                                     </div>
                                 </div>
-                                <button class="btn btn--outline" onclick="showSyncOptions()">
-                                    🌐 Configura Sincronizzazione Team
-                                </button>
+                                <div class="sync-controls">
+                                    <button class="btn btn--outline" onclick="testFirebaseConnection()">
+                                        🔍 Testa Connessione
+                                    </button>
+                                    <button class="btn btn--outline" onclick="showFirebaseStats()">
+                                        📊 Statistiche Sync
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -221,7 +235,7 @@
                     </div>
                 </div>
 
-                <div class="table-container">
+                <div class="table-container-fixed">
                     <div id="contatti-empty-state" class="empty-state">
                         <div class="empty-state-icon">📋</div>
                         <h3>Nessun contatto inserito</h3>
@@ -229,28 +243,28 @@
                         <button onclick="addContatto()" class="btn btn--primary">➕ Aggiungi Primo Contatto</button>
                     </div>
 
-                    <div class="scroll-indicator" id="scroll-indicator-contatti" style="display: none;">
-                        ← Scorri per vedere tutte le colonne →
+                    <div class="scroll-hint">
+                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
                     </div>
 
-                    <div class="table-wrapper">
-                        <table class="data-table" id="contatti-table">
+                    <div class="table-scroll-container">
+                        <table class="data-table-fixed" id="contatti-table">
                             <thead>
                                 <tr>
-                                    <th style="min-width: 120px;">Nome</th>
-                                    <th style="min-width: 120px;">Cognome</th>
-                                    <th style="min-width: 150px;">Azienda</th>
-                                    <th style="min-width: 180px;">Email</th>
-                                    <th style="min-width: 130px;">Telefono</th>
-                                    <th style="min-width: 120px;">Ruolo</th>
-                                    <th style="min-width: 140px;">Assegnato a</th>
-                                    <th style="min-width: 130px;">Stato</th>
-                                    <th style="min-width: 120px;">Scopo</th>
-                                    <th style="min-width: 150px;">Ultimo Contatto</th>
-                                    <th style="min-width: 150px;">Prossimo Follow-up</th>
-                                    <th style="min-width: 200px;">Note</th>
-                                    <th style="min-width: 120px;">Priorità</th>
-                                    <th style="min-width: 100px;">Azioni</th>
+                                    <th class="col-fixed col-nome">Nome</th>
+                                    <th class="col-fixed col-cognome">Cognome</th>
+                                    <th class="col-medium">Azienda</th>
+                                    <th class="col-large">Email</th>
+                                    <th class="col-medium">Telefono</th>
+                                    <th class="col-medium">Ruolo</th>
+                                    <th class="col-medium">Assegnato a</th>
+                                    <th class="col-medium">Stato</th>
+                                    <th class="col-medium">Scopo</th>
+                                    <th class="col-medium">Ultimo Contatto</th>
+                                    <th class="col-medium">Prossimo Follow-up</th>
+                                    <th class="col-large">Note</th>
+                                    <th class="col-small">Priorità</th>
+                                    <th class="col-small">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="contatti-table-body">
@@ -298,8 +312,8 @@
 
                             <div id="comparison-results" class="comparison-results" style="display: none;">
                                 <h4>📈 Risultati Confronto</h4>
-                                <div class="table-wrapper">
-                                    <table class="data-table comparison-table" id="comparison-table">
+                                <div class="table-scroll-container">
+                                    <table class="data-table-fixed comparison-table" id="comparison-table">
                                         <!-- Populated by JavaScript -->
                                     </table>
                                 </div>
@@ -308,7 +322,7 @@
                     </div>
                 </div>
 
-                <div class="table-container">
+                <div class="table-container-fixed">
                     <div id="location-empty-state" class="empty-state">
                         <div class="empty-state-icon">🏢</div>
                         <h3>Nessuna location inserita</h3>
@@ -316,31 +330,31 @@
                         <button onclick="addLocation()" class="btn btn--primary">➕ Aggiungi Prima Location</button>
                     </div>
 
-                    <div class="scroll-indicator" id="scroll-indicator-location" style="display: none;">
-                        ← Scorri per vedere tutte le colonne →
+                    <div class="scroll-hint">
+                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
                     </div>
 
-                    <div class="table-wrapper">
-                        <table class="data-table" id="location-table">
+                    <div class="table-scroll-container">
+                        <table class="data-table-fixed" id="location-table">
                             <thead>
                                 <tr>
-                                    <th style="min-width: 150px;">Nome</th>
-                                    <th style="min-width: 200px;">Indirizzo</th>
-                                    <th style="min-width: 140px;">Referente</th>
-                                    <th style="min-width: 180px;">Contatto</th>
-                                    <th style="min-width: 100px;">Capienza</th>
-                                    <th style="min-width: 130px;">Budget Base (€)</th>
-                                    <th style="min-width: 130px;">Costi Extra (€)</th>
-                                    <th style="min-width: 130px;">Totale (€)</th>
-                                    <th style="min-width: 120px;">Orari</th>
-                                    <th style="min-width: 180px;">Attrezzature</th>
-                                    <th style="min-width: 100px;">Catering</th>
-                                    <th style="min-width: 120px;">Parcheggio</th>
-                                    <th style="min-width: 150px;">Trasporti</th>
-                                    <th style="min-width: 140px;">Status</th>
-                                    <th style="min-width: 120px;">Valutazione</th>
-                                    <th style="min-width: 200px;">Note</th>
-                                    <th style="min-width: 100px;">Azioni</th>
+                                    <th class="col-fixed col-nome">Nome</th>
+                                    <th class="col-large">Indirizzo</th>
+                                    <th class="col-medium">Referente</th>
+                                    <th class="col-medium">Contatto</th>
+                                    <th class="col-small">Capienza</th>
+                                    <th class="col-medium">Budget Base (€)</th>
+                                    <th class="col-medium">Costi Extra (€)</th>
+                                    <th class="col-medium">Totale (€)</th>
+                                    <th class="col-medium">Orari</th>
+                                    <th class="col-large">Attrezzature</th>
+                                    <th class="col-small">Catering</th>
+                                    <th class="col-small">Parcheggio</th>
+                                    <th class="col-medium">Trasporti</th>
+                                    <th class="col-medium">Status</th>
+                                    <th class="col-small">Valutazione</th>
+                                    <th class="col-large">Note</th>
+                                    <th class="col-small">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="location-table-body">
@@ -407,7 +421,7 @@
                     </div>
                 </div>
 
-                <div class="table-container">
+                <div class="table-container-fixed">
                     <div id="sponsor-empty-state" class="empty-state">
                         <div class="empty-state-icon">🤝</div>
                         <h3>Nessuno sponsor inserito</h3>
@@ -415,29 +429,29 @@
                         <button onclick="addSponsor()" class="btn btn--primary">➕ Aggiungi Primo Sponsor</button>
                     </div>
 
-                    <div class="scroll-indicator" id="scroll-indicator-sponsor" style="display: none;">
-                        ← Scorri per vedere tutte le colonne →
+                    <div class="scroll-hint">
+                        <span class="scroll-text">← Scorri orizzontalmente per vedere tutte le colonne →</span>
                     </div>
 
-                    <div class="table-wrapper">
-                        <table class="data-table" id="sponsor-table">
+                    <div class="table-scroll-container">
+                        <table class="data-table-fixed" id="sponsor-table">
                             <thead>
                                 <tr>
-                                    <th style="min-width: 180px;">Nome/Azienda</th>
-                                    <th style="min-width: 140px;">Referente</th>
-                                    <th style="min-width: 180px;">Email</th>
-                                    <th style="min-width: 130px;">Telefono</th>
-                                    <th style="min-width: 140px;">Tipo Sponsor</th>
-                                    <th style="min-width: 120px;">Importo (€)</th>
-                                    <th style="min-width: 140px;">Tipo Contributo</th>
-                                    <th style="min-width: 180px;">Servizi</th>
-                                    <th style="min-width: 140px;">Status</th>
-                                    <th style="min-width: 140px;">Data Proposta</th>
-                                    <th style="min-width: 120px;">Scadenza</th>
-                                    <th style="min-width: 180px;">Benefici</th>
-                                    <th style="min-width: 100px;">Completato</th>
-                                    <th style="min-width: 200px;">Note</th>
-                                    <th style="min-width: 100px;">Azioni</th>
+                                    <th class="col-fixed col-nome">Nome/Azienda</th>
+                                    <th class="col-medium">Referente</th>
+                                    <th class="col-large">Email</th>
+                                    <th class="col-medium">Telefono</th>
+                                    <th class="col-medium">Tipo Sponsor</th>
+                                    <th class="col-medium">Importo (€)</th>
+                                    <th class="col-medium">Tipo Contributo</th>
+                                    <th class="col-large">Servizi</th>
+                                    <th class="col-medium">Status</th>
+                                    <th class="col-medium">Data Proposta</th>
+                                    <th class="col-medium">Scadenza</th>
+                                    <th class="col-large">Benefici</th>
+                                    <th class="col-small">Completato</th>
+                                    <th class="col-large">Note</th>
+                                    <th class="col-small">Azioni</th>
                                 </tr>
                             </thead>
                             <tbody id="sponsor-table-body">
