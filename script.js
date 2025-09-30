@@ -14,6 +14,7 @@ let appData = {
 };
 
 let teamMembers = ["Membro 1", "Membro 2", "Membro 3"];
+let sponsorTarget = 0; // Obiettivo sponsorship
 
 const OPTIONS = {
   statoContatto: ['Nuovo Contatto', 'In Corso', 'Contattato', 'Confermato', 'Rifiutato'],
@@ -52,7 +53,8 @@ function loadFromStorage(key, defaultValue = null) {
 
 function saveAllData() {
   const success = saveToStorage(STORAGE_KEYS.data, appData) && 
-                  saveToStorage(STORAGE_KEYS.team, teamMembers);
+                  saveToStorage(STORAGE_KEYS.team, teamMembers) &&
+                  saveToStorage(STORAGE_KEYS.settings, { sponsorTarget });
 
   if (success) {
     showSaveIndicator();
@@ -75,6 +77,12 @@ function loadAllData() {
   const savedTeam = loadFromStorage(STORAGE_KEYS.team);
   if (savedTeam && Array.isArray(savedTeam) && savedTeam.length === 3) {
     teamMembers = savedTeam;
+  }
+
+  // Carica le impostazioni
+  const savedSettings = loadFromStorage(STORAGE_KEYS.settings);
+  if (savedSettings && typeof savedSettings === 'object') {
+    sponsorTarget = savedSettings.sponsorTarget || 0;
   }
 
   console.log(`✅ Dati caricati - Contatti: ${appData.contatti.length}, Location: ${appData.location.length}, Sponsor: ${appData.sponsor.length}`);
@@ -130,6 +138,8 @@ function initializeApp() {
   updateTeamPreview();
   updateAllTables();
   updateDashboardStats();
+  updateSponsorStats();
+  updateLocationCheckboxes();
 
   // Setup event listeners
   setupEventListeners();
@@ -159,9 +169,15 @@ function setupEventListeners() {
   });
 
   // Form submit listener
-  const loginForm = document.getElementById('login-form');
+  const loginForm = document.querySelector('.login-form');
   if (loginForm) {
     loginForm.addEventListener('submit', handleLogin);
+  }
+
+  // Sponsor target listener
+  const targetInput = document.getElementById('sponsor-target');
+  if (targetInput) {
+    targetInput.value = sponsorTarget;
   }
 }
 
@@ -209,6 +225,10 @@ function saveSettings() {
     updateTeamPreview();
     updateAllTables(); // Ricarica le tabelle con i nuovi nomi
   }
+}
+
+function showSyncOptions() {
+  alert('🚧 Funzionalità in sviluppo!\n\nPer ora i dati sono salvati localmente nel browser.\n\nPer sincronizzazione team in tempo reale, contatta il supporto per attivare Firebase Database.');
 }
 
 // ========== CRUD OPERATIONS ==========
@@ -286,6 +306,7 @@ function addLocation() {
   appData.location.push(newLocation);
   saveAllData();
   updateLocationTable();
+  updateLocationCheckboxes();
   updateDashboardStats();
   showNotification('Location aggiunta', 'success');
 }
@@ -304,6 +325,7 @@ function deleteLocation(id) {
     appData.location = appData.location.filter(item => item.id !== id);
     saveAllData();
     updateLocationTable();
+    updateLocationCheckboxes();
     updateDashboardStats();
     showNotification('Location eliminata', 'success');
   }
@@ -332,6 +354,7 @@ function addSponsor() {
   appData.sponsor.push(newSponsor);
   saveAllData();
   updateSponsorTable();
+  updateSponsorStats();
   updateDashboardStats();
   showNotification('Sponsor aggiunto', 'success');
 }
@@ -341,6 +364,7 @@ function updateSponsor(id, field, value) {
   if (sponsor) {
     sponsor[field] = value;
     saveAllData();
+    updateSponsorStats();
     updateDashboardStats();
   }
 }
@@ -350,6 +374,7 @@ function deleteSponsor(id) {
     appData.sponsor = appData.sponsor.filter(item => item.id !== id);
     saveAllData();
     updateSponsorTable();
+    updateSponsorStats();
     updateDashboardStats();
     showNotification('Sponsor eliminato', 'success');
   }
@@ -426,7 +451,12 @@ function updateLocationTable() {
     table.style.display = 'table';
     emptyState.style.display = 'none';
 
-    tableBody.innerHTML = appData.location.map(location => `
+    tableBody.innerHTML = appData.location.map(location => {
+      const budgetBase = parseFloat(location.budgetBase) || 0;
+      const costiExtra = parseFloat(location.costiAggiuntivi) || 0;
+      const totale = budgetBase + costiExtra;
+
+      return `
       <tr class="table-row">
         <td><input type="text" value="${location.nome}" onchange="updateLocation('${location.id}', 'nome', this.value)" class="table-input"></td>
         <td><input type="text" value="${location.indirizzo}" onchange="updateLocation('${location.id}', 'indirizzo', this.value)" class="table-input"></td>
@@ -435,6 +465,7 @@ function updateLocationTable() {
         <td><input type="number" value="${location.capienza}" onchange="updateLocation('${location.id}', 'capienza', this.value)" class="table-input"></td>
         <td><input type="number" value="${location.budgetBase}" onchange="updateLocation('${location.id}', 'budgetBase', this.value)" class="table-input"></td>
         <td><input type="number" value="${location.costiAggiuntivi}" onchange="updateLocation('${location.id}', 'costiAggiuntivi', this.value)" class="table-input"></td>
+        <td style="font-weight: 600; color: #1e40af;">€${totale.toLocaleString()}</td>
         <td><input type="text" value="${location.orari}" onchange="updateLocation('${location.id}', 'orari', this.value)" class="table-input"></td>
         <td><input type="text" value="${location.attrezzature}" onchange="updateLocation('${location.id}', 'attrezzature', this.value)" class="table-input" placeholder="Es: Proiettori, Audio, WiFi"></td>
         <td>
@@ -468,7 +499,8 @@ function updateLocationTable() {
         <td><textarea onchange="updateLocation('${location.id}', 'note', this.value)" class="table-textarea">${location.note}</textarea></td>
         <td><button onclick="deleteLocation('${location.id}')" class="btn btn--danger">🗑️</button></td>
       </tr>
-    `).join('');
+    `;
+    }).join('');
   }
 }
 
@@ -539,17 +571,170 @@ function updateDashboardStats() {
 
   document.getElementById('contatti-confermati').textContent = contattiConfermati;
   document.getElementById('location-confermate').textContent = locationConfermate;
+  document.getElementById('sponsor-confermati').textContent = sponsorConfermati;
 
-  // Valore sponsor
+  // Valore sponsor totale
   const totalSponsorValue = appData.sponsor
     .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
     .reduce((sum, s) => sum + parseFloat(s.importo), 0);
 
+  // Valore sponsor confermato
+  const confirmedSponsorValue = appData.sponsor
+    .filter(s => s.status === 'Confermato' && s.importo && !isNaN(parseFloat(s.importo)))
+    .reduce((sum, s) => sum + parseFloat(s.importo), 0);
+
   document.getElementById('valore-sponsor').textContent = `€${totalSponsorValue.toLocaleString()}`;
+  document.getElementById('valore-confermato').textContent = `€${confirmedSponsorValue.toLocaleString()}`;
 
   // Priorità alta
   const prioritaAlta = appData.contatti.filter(c => c.priorita === 'Alta').length;
   document.getElementById('priorita-alta').textContent = prioritaAlta;
+}
+
+// ========== GESTIONE SPONSOR STATS ==========
+
+function updateSponsorStats() {
+  // Calcoli base
+  const totalValue = appData.sponsor
+    .filter(s => s.importo && !isNaN(parseFloat(s.importo)))
+    .reduce((sum, s) => sum + parseFloat(s.importo), 0);
+
+  const confirmedValue = appData.sponsor
+    .filter(s => s.status === 'Confermato' && s.importo && !isNaN(parseFloat(s.importo)))
+    .reduce((sum, s) => sum + parseFloat(s.importo), 0);
+
+  const pendingValue = appData.sponsor
+    .filter(s => s.status === 'In negoziazione' && s.importo && !isNaN(parseFloat(s.importo)))
+    .reduce((sum, s) => sum + parseFloat(s.importo), 0);
+
+  const totalSponsors = appData.sponsor.length;
+  const confirmedSponsors = appData.sponsor.filter(s => s.status === 'Confermato').length;
+  const pendingSponsors = appData.sponsor.filter(s => s.status === 'In negoziazione').length;
+
+  // Aggiorna interfaccia
+  document.getElementById('total-sponsorship-value').textContent = `€${totalValue.toLocaleString()}`;
+  document.getElementById('confirmed-sponsorship-value').textContent = `€${confirmedValue.toLocaleString()}`;
+  document.getElementById('pending-sponsorship-value').textContent = `€${pendingValue.toLocaleString()}`;
+
+  document.getElementById('sponsor-breakdown').textContent = `${totalSponsors} sponsor totali`;
+  document.getElementById('confirmed-sponsor-breakdown').textContent = `${confirmedSponsors} sponsor confermati`;
+  document.getElementById('pending-sponsor-breakdown').textContent = `${pendingSponsors} sponsor in corso`;
+
+  // Calcola percentuale obiettivo
+  const targetInput = document.getElementById('sponsor-target');
+  const currentTarget = parseFloat(targetInput?.value) || sponsorTarget;
+  if (currentTarget > 0) {
+    const percentage = Math.round((confirmedValue / currentTarget) * 100);
+    document.getElementById('target-progress').textContent = `${Math.min(percentage, 100)}%`;
+    sponsorTarget = currentTarget;
+    saveAllData();
+  } else {
+    document.getElementById('target-progress').textContent = '0%';
+  }
+}
+
+// ========== CONFRONTO LOCATION ==========
+
+let locationComparisonVisible = false;
+
+function toggleLocationComparison() {
+  const container = document.getElementById('location-comparison');
+  const btn = document.getElementById('compare-btn');
+
+  locationComparisonVisible = !locationComparisonVisible;
+
+  if (locationComparisonVisible) {
+    container.style.display = 'block';
+    btn.textContent = '❌ Chiudi Confronto';
+    updateLocationCheckboxes();
+  } else {
+    container.style.display = 'none';
+    btn.textContent = '📊 Confronta Location';
+  }
+}
+
+function updateLocationCheckboxes() {
+  const container = document.getElementById('location-checkboxes');
+  if (!container) return;
+
+  if (appData.location.length === 0) {
+    container.innerHTML = '<p style="color: #64748b;">Aggiungi location per utilizzare il confronto</p>';
+    return;
+  }
+
+  container.innerHTML = appData.location.map(location => `
+    <div class="checkbox-item">
+      <input type="checkbox" id="compare-${location.id}" value="${location.id}">
+      <label for="compare-${location.id}">${location.nome || 'Location senza nome'}</label>
+    </div>
+  `).join('');
+}
+
+function generateComparison() {
+  const checkboxes = document.querySelectorAll('#location-checkboxes input[type="checkbox"]:checked');
+  const selectedIds = Array.from(checkboxes).map(cb => cb.value);
+
+  if (selectedIds.length < 2) {
+    alert('Seleziona almeno 2 location per il confronto');
+    return;
+  }
+
+  const selectedLocations = appData.location.filter(loc => selectedIds.includes(loc.id));
+  const resultsContainer = document.getElementById('comparison-results');
+  const table = document.getElementById('comparison-table');
+
+  // Crea tabella confronto
+  const headers = ['Caratteristica', ...selectedLocations.map(loc => loc.nome || 'Senza nome')];
+
+  const rows = [
+    ['Capienza', ...selectedLocations.map(loc => loc.capienza || 'N/D')],
+    ['Budget Base (€)', ...selectedLocations.map(loc => loc.budgetBase ? `€${parseInt(loc.budgetBase).toLocaleString()}` : 'N/D')],
+    ['Costi Extra (€)', ...selectedLocations.map(loc => loc.costiAggiuntivi ? `€${parseInt(loc.costiAggiuntivi).toLocaleString()}` : 'N/D')],
+    ['Totale (€)', ...selectedLocations.map(loc => {
+      const base = parseFloat(loc.budgetBase) || 0;
+      const extra = parseFloat(loc.costiAggiuntivi) || 0;
+      return `€${(base + extra).toLocaleString()}`;
+    })],
+    ['Catering', ...selectedLocations.map(loc => loc.catering || 'N/D')],
+    ['Parcheggio', ...selectedLocations.map(loc => loc.parcheggio || 'N/D')],
+    ['Valutazione', ...selectedLocations.map(loc => `${loc.valutazione || 0} ⭐`)],
+    ['Status', ...selectedLocations.map(loc => loc.status || 'N/D')]
+  ];
+
+  // Trova migliori/peggiori valori per evidenziazione
+  const budgetTotals = selectedLocations.map(loc => {
+    const base = parseFloat(loc.budgetBase) || 0;
+    const extra = parseFloat(loc.costiAggiuntivi) || 0;
+    return base + extra;
+  });
+  const minBudget = Math.min(...budgetTotals.filter(b => b > 0));
+  const maxBudget = Math.max(...budgetTotals);
+
+  table.innerHTML = `
+    <thead>
+      <tr>
+        ${headers.map(h => `<th>${h}</th>`).join('')}
+      </tr>
+    </thead>
+    <tbody>
+      ${rows.map((row, rowIndex) => `
+        <tr>
+          ${row.map((cell, cellIndex) => {
+            let className = '';
+            if (rowIndex === 3 && cellIndex > 0) { // Riga totale budget
+              const value = budgetTotals[cellIndex - 1];
+              if (value === minBudget && value > 0) className = 'best-value';
+              if (value === maxBudget && value > minBudget) className = 'worst-value';
+            }
+            return `<td class="${className}">${cell}</td>`;
+          }).join('')}
+        </tr>
+      `).join('')}
+    </tbody>
+  `;
+
+  resultsContainer.style.display = 'block';
+  showNotification(`Confronto generato per ${selectedIds.length} location`, 'success');
 }
 
 // ========== UTILITÀ ==========
@@ -589,8 +774,9 @@ function exportData() {
   const dataToExport = {
     teamMembers: teamMembers,
     data: appData,
+    settings: { sponsorTarget },
     exportDate: new Date().toISOString(),
-    version: "1.0"
+    version: "2.0"
   };
 
   const dataStr = JSON.stringify(dataToExport, null, 2);
@@ -674,7 +860,3 @@ document.addEventListener('DOMContentLoaded', function() {
 
   console.log('✅ Sistema pronto - inserire password per accedere');
 });
-
-// ========== DEBUG (solo per sviluppo) ==========
-// Uncomment per debug
-// window.debugApp = { appData, teamMembers, loadAllData, saveAllData };
