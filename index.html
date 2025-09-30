@@ -119,6 +119,26 @@
                                     <!-- Populated by JavaScript -->
                                 </div>
                             </div>
+
+                            <!-- SEZIONE SINCRONIZZAZIONE -->
+                            <div class="sync-section">
+                                <h3>🔄 Sincronizzazione Team</h3>
+                                <div class="sync-warning">
+                                    <div class="warning-icon">⚠️</div>
+                                    <div class="warning-content">
+                                        <h4>IMPORTANTE: Condivisione Dati</h4>
+                                        <p><strong>Attualmente i dati sono salvati localmente</strong> nel browser di ciascun utente.</p>
+                                        <p>Se vuoi che tutto il team veda gli stessi dati in tempo reale, è necessario attivare la sincronizzazione cloud.</p>
+                                        <ul>
+                                            <li>✅ <strong>localStorage</strong>: Dati privati per dispositivo</li>
+                                            <li>🔄 <strong>Firebase Sync</strong>: Dati condivisi team (da attivare)</li>
+                                        </ul>
+                                    </div>
+                                </div>
+                                <button class="btn btn--outline" onclick="showSyncOptions()">
+                                    🌐 Configura Sincronizzazione Team
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -160,7 +180,18 @@
                                 <p>Sponsor Totali</p>
                             </div>
                             <div class="stat-detail">
-                                <span id="valore-sponsor">€0</span> valore totale
+                                <span id="sponsor-confermati">0</span> confermati
+                            </div>
+                        </div>
+
+                        <div class="stat-card stat-card--valore">
+                            <div class="stat-icon">💵</div>
+                            <div class="stat-content">
+                                <h3 id="valore-sponsor">€0</h3>
+                                <p>Valore Totale</p>
+                            </div>
+                            <div class="stat-detail">
+                                <span id="valore-confermato">€0</span> confermato
                             </div>
                         </div>
 
@@ -198,29 +229,35 @@
                         <button onclick="addContatto()" class="btn btn--primary">➕ Aggiungi Primo Contatto</button>
                     </div>
 
-                    <table class="data-table" id="contatti-table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Cognome</th>
-                                <th>Azienda</th>
-                                <th>Email</th>
-                                <th>Telefono</th>
-                                <th>Ruolo</th>
-                                <th>Assegnato a</th>
-                                <th>Stato</th>
-                                <th>Scopo</th>
-                                <th>Ultimo Contatto</th>
-                                <th>Prossimo Follow-up</th>
-                                <th>Note</th>
-                                <th>Priorità</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="contatti-table-body">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
+                    <div class="scroll-indicator" id="scroll-indicator-contatti" style="display: none;">
+                        ← Scorri per vedere tutte le colonne →
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="contatti-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 120px;">Nome</th>
+                                    <th style="min-width: 120px;">Cognome</th>
+                                    <th style="min-width: 150px;">Azienda</th>
+                                    <th style="min-width: 180px;">Email</th>
+                                    <th style="min-width: 130px;">Telefono</th>
+                                    <th style="min-width: 120px;">Ruolo</th>
+                                    <th style="min-width: 140px;">Assegnato a</th>
+                                    <th style="min-width: 130px;">Stato</th>
+                                    <th style="min-width: 120px;">Scopo</th>
+                                    <th style="min-width: 150px;">Ultimo Contatto</th>
+                                    <th style="min-width: 150px;">Prossimo Follow-up</th>
+                                    <th style="min-width: 200px;">Note</th>
+                                    <th style="min-width: 120px;">Priorità</th>
+                                    <th style="min-width: 100px;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="contatti-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -233,6 +270,41 @@
                         <button onclick="addLocation()" class="btn btn--primary">
                             ➕ Aggiungi Location
                         </button>
+                        <button onclick="toggleLocationComparison()" class="btn btn--outline" id="compare-btn">
+                            📊 Confronta Location
+                        </button>
+                    </div>
+                </div>
+
+                <!-- SEZIONE CONFRONTO LOCATION -->
+                <div id="location-comparison" class="comparison-container" style="display: none;">
+                    <div class="card">
+                        <div class="card__header">
+                            <h3>📊 Confronto Location</h3>
+                            <p>Seleziona le location da confrontare e analizza le differenze</p>
+                        </div>
+                        <div class="card__body">
+                            <div class="comparison-controls">
+                                <div class="form-group">
+                                    <label class="form-label">Seleziona location da confrontare:</label>
+                                    <div id="location-checkboxes" class="checkbox-group">
+                                        <!-- Populated by JavaScript -->
+                                    </div>
+                                </div>
+                                <button onclick="generateComparison()" class="btn btn--primary">
+                                    🔍 Genera Confronto
+                                </button>
+                            </div>
+
+                            <div id="comparison-results" class="comparison-results" style="display: none;">
+                                <h4>📈 Risultati Confronto</h4>
+                                <div class="table-wrapper">
+                                    <table class="data-table comparison-table" id="comparison-table">
+                                        <!-- Populated by JavaScript -->
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -244,31 +316,38 @@
                         <button onclick="addLocation()" class="btn btn--primary">➕ Aggiungi Prima Location</button>
                     </div>
 
-                    <table class="data-table" id="location-table">
-                        <thead>
-                            <tr>
-                                <th>Nome</th>
-                                <th>Indirizzo</th>
-                                <th>Referente</th>
-                                <th>Contatto</th>
-                                <th>Capienza</th>
-                                <th>Budget Base (€)</th>
-                                <th>Costi Extra (€)</th>
-                                <th>Orari</th>
-                                <th>Attrezzature</th>
-                                <th>Catering</th>
-                                <th>Parcheggio</th>
-                                <th>Trasporti</th>
-                                <th>Status</th>
-                                <th>Valutazione</th>
-                                <th>Note</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="location-table-body">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
+                    <div class="scroll-indicator" id="scroll-indicator-location" style="display: none;">
+                        ← Scorri per vedere tutte le colonne →
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="location-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 150px;">Nome</th>
+                                    <th style="min-width: 200px;">Indirizzo</th>
+                                    <th style="min-width: 140px;">Referente</th>
+                                    <th style="min-width: 180px;">Contatto</th>
+                                    <th style="min-width: 100px;">Capienza</th>
+                                    <th style="min-width: 130px;">Budget Base (€)</th>
+                                    <th style="min-width: 130px;">Costi Extra (€)</th>
+                                    <th style="min-width: 130px;">Totale (€)</th>
+                                    <th style="min-width: 120px;">Orari</th>
+                                    <th style="min-width: 180px;">Attrezzature</th>
+                                    <th style="min-width: 100px;">Catering</th>
+                                    <th style="min-width: 120px;">Parcheggio</th>
+                                    <th style="min-width: 150px;">Trasporti</th>
+                                    <th style="min-width: 140px;">Status</th>
+                                    <th style="min-width: 120px;">Valutazione</th>
+                                    <th style="min-width: 200px;">Note</th>
+                                    <th style="min-width: 100px;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="location-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 
@@ -284,6 +363,50 @@
                     </div>
                 </div>
 
+                <!-- SEZIONE TOTALE SPONSORSHIP -->
+                <div class="sponsor-summary">
+                    <div class="summary-cards">
+                        <div class="summary-card summary-card--total">
+                            <div class="summary-icon">💰</div>
+                            <div class="summary-content">
+                                <h3 id="total-sponsorship-value">€0</h3>
+                                <p>Valore Totale Sponsorship</p>
+                                <small id="sponsor-breakdown">0 sponsor totali</small>
+                            </div>
+                        </div>
+
+                        <div class="summary-card summary-card--confirmed">
+                            <div class="summary-icon">✅</div>
+                            <div class="summary-content">
+                                <h3 id="confirmed-sponsorship-value">€0</h3>
+                                <p>Sponsorship Confermate</p>
+                                <small id="confirmed-sponsor-breakdown">0 sponsor confermati</small>
+                            </div>
+                        </div>
+
+                        <div class="summary-card summary-card--pending">
+                            <div class="summary-icon">⏳</div>
+                            <div class="summary-content">
+                                <h3 id="pending-sponsorship-value">€0</h3>
+                                <p>In Negoziazione</p>
+                                <small id="pending-sponsor-breakdown">0 sponsor in corso</small>
+                            </div>
+                        </div>
+
+                        <div class="summary-card summary-card--target">
+                            <div class="summary-icon">🎯</div>
+                            <div class="summary-content">
+                                <h3 id="target-progress">0%</h3>
+                                <p>Obiettivo Raggiunto</p>
+                                <small>
+                                    <input type="number" id="sponsor-target" placeholder="Obiettivo €" 
+                                           class="target-input" onchange="updateSponsorStats()" style="width: 120px; font-size: 12px;">
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="table-container">
                     <div id="sponsor-empty-state" class="empty-state">
                         <div class="empty-state-icon">🤝</div>
@@ -292,30 +415,36 @@
                         <button onclick="addSponsor()" class="btn btn--primary">➕ Aggiungi Primo Sponsor</button>
                     </div>
 
-                    <table class="data-table" id="sponsor-table">
-                        <thead>
-                            <tr>
-                                <th>Nome/Azienda</th>
-                                <th>Referente</th>
-                                <th>Email</th>
-                                <th>Telefono</th>
-                                <th>Tipo Sponsor</th>
-                                <th>Importo (€)</th>
-                                <th>Tipo Contributo</th>
-                                <th>Servizi</th>
-                                <th>Status</th>
-                                <th>Data Proposta</th>
-                                <th>Scadenza</th>
-                                <th>Benefici</th>
-                                <th>Completato</th>
-                                <th>Note</th>
-                                <th>Azioni</th>
-                            </tr>
-                        </thead>
-                        <tbody id="sponsor-table-body">
-                            <!-- Populated by JavaScript -->
-                        </tbody>
-                    </table>
+                    <div class="scroll-indicator" id="scroll-indicator-sponsor" style="display: none;">
+                        ← Scorri per vedere tutte le colonne →
+                    </div>
+
+                    <div class="table-wrapper">
+                        <table class="data-table" id="sponsor-table">
+                            <thead>
+                                <tr>
+                                    <th style="min-width: 180px;">Nome/Azienda</th>
+                                    <th style="min-width: 140px;">Referente</th>
+                                    <th style="min-width: 180px;">Email</th>
+                                    <th style="min-width: 130px;">Telefono</th>
+                                    <th style="min-width: 140px;">Tipo Sponsor</th>
+                                    <th style="min-width: 120px;">Importo (€)</th>
+                                    <th style="min-width: 140px;">Tipo Contributo</th>
+                                    <th style="min-width: 180px;">Servizi</th>
+                                    <th style="min-width: 140px;">Status</th>
+                                    <th style="min-width: 140px;">Data Proposta</th>
+                                    <th style="min-width: 120px;">Scadenza</th>
+                                    <th style="min-width: 180px;">Benefici</th>
+                                    <th style="min-width: 100px;">Completato</th>
+                                    <th style="min-width: 200px;">Note</th>
+                                    <th style="min-width: 100px;">Azioni</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sponsor-table-body">
+                                <!-- Populated by JavaScript -->
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </main>
