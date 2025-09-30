@@ -17,6 +17,7 @@
                     <h1>Event Management System</h1>
                     <p>Sistema di gestione eventi professionale</p>
                 </div>
+                <!-- ✅ FORM CORRETTO: onsubmit="handleLogin(event)" -->
                 <form class="login-form" onsubmit="handleLogin(event)">
                     <div class="form-group">
                         <label for="password-input" class="form-label">Password di accesso</label>
@@ -116,7 +117,7 @@
                                     💾 Salva Configurazione
                                 </button>
                             </div>
-
+                            
                             <div class="team-preview-section">
                                 <h3>👀 Anteprima Team</h3>
                                 <div id="team-preview" class="team-preview">
@@ -158,7 +159,7 @@
             <div id="dashboard-tab" class="tab-pane">
                 <div class="dashboard-container">
                     <h2>📈 Panoramica Progetto</h2>
-
+                    
                     <!-- Statistics Cards -->
                     <div class="stats-grid">
                         <div class="stat-card stat-card--contatti">
@@ -171,7 +172,7 @@
                                 <span id="contatti-confermati">0</span> confermati
                             </div>
                         </div>
-
+                        
                         <div class="stat-card stat-card--location">
                             <div class="stat-icon">📍</div>
                             <div class="stat-content">
@@ -182,7 +183,7 @@
                                 <span id="location-confermate">0</span> confermate
                             </div>
                         </div>
-
+                        
                         <div class="stat-card stat-card--sponsor">
                             <div class="stat-icon">💰</div>
                             <div class="stat-content">
@@ -193,7 +194,7 @@
                                 <span id="sponsor-confermati">0</span> confermati
                             </div>
                         </div>
-
+                        
                         <div class="stat-card stat-card--valore">
                             <div class="stat-icon">💵</div>
                             <div class="stat-content">
@@ -204,7 +205,7 @@
                                 <span id="valore-confermato">€0</span> confermato
                             </div>
                         </div>
-
+                        
                         <div class="stat-card stat-card--priorita">
                             <div class="stat-icon">🔥</div>
                             <div class="stat-content">
@@ -238,7 +239,7 @@
                         <p>Inizia aggiungendo il primo contatto per il tuo progetto</p>
                         <button onclick="addContatto()" class="btn btn--primary">➕ Aggiungi Primo Contatto</button>
                     </div>
-
+                    
                     <div class="table-scroll-clean">
                         <table class="data-table-clean" id="contatti-table">
                             <thead>
@@ -301,7 +302,7 @@
                                     🔍 Genera Confronto
                                 </button>
                             </div>
-
+                            
                             <div id="comparison-results" class="comparison-results" style="display: none;">
                                 <h4>📈 Risultati Confronto</h4>
                                 <div class="table-scroll-clean">
@@ -321,7 +322,7 @@
                         <p>Aggiungi le venue che stai valutando per l'evento</p>
                         <button onclick="addLocation()" class="btn btn--primary">➕ Aggiungi Prima Location</button>
                     </div>
-
+                    
                     <div class="table-scroll-clean">
                         <table class="data-table-clean" id="location-table">
                             <thead>
@@ -376,7 +377,7 @@
                                 <small id="sponsor-breakdown">0 sponsor totali</small>
                             </div>
                         </div>
-
+                        
                         <div class="summary-card summary-card--confirmed">
                             <div class="summary-icon">✅</div>
                             <div class="summary-content">
@@ -385,7 +386,7 @@
                                 <small id="confirmed-sponsor-breakdown">0 sponsor confermati</small>
                             </div>
                         </div>
-
+                        
                         <div class="summary-card summary-card--pending">
                             <div class="summary-icon">⏳</div>
                             <div class="summary-content">
@@ -394,7 +395,7 @@
                                 <small id="pending-sponsor-breakdown">0 sponsor in corso</small>
                             </div>
                         </div>
-
+                        
                         <div class="summary-card summary-card--target">
                             <div class="summary-icon">🎯</div>
                             <div class="summary-content">
@@ -416,7 +417,7 @@
                         <p>Inizia a tracciare potenziali sponsor e partnership</p>
                         <button onclick="addSponsor()" class="btn btn--primary">➕ Aggiungi Primo Sponsor</button>
                     </div>
-
+                    
                     <div class="table-scroll-clean">
                         <table class="data-table-clean" id="sponsor-table">
                             <thead>
@@ -448,34 +449,31 @@
         </main>
     </div>
 
-    <!-- FIREBASE CONFIGURAZIONE REALE INTEGRATA -->
+    <!-- ✅ FIREBASE CONFIGURAZIONE CORRETTA (storageBucket fixed) -->
     <script type="module">
-        // Import the functions you need from the SDKs you need
         import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
         import { getDatabase } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
 
-        // Your web app's Firebase configuration (REALE)
         const firebaseConfig = {
             apiKey: "AIzaSyBtkt8WKEQ9hohxGLYiswYQkXIBMYHMG5k",
             authDomain: "event-management-assomor-a7b0f.firebaseapp.com",
             databaseURL: "https://event-management-assomor-a7b0f-default-rtdb.europe-west1.firebasedatabase.app",
             projectId: "event-management-assomor-a7b0f",
-            storageBucket: "event-management-assomor-a7b0f.firebasestorage.app",
+            storageBucket: "event-management-assomor-a7b0f.appspot.com",
             messagingSenderId: "1023833761975",
             appId: "1:1023833761975:web:9463184f23d336c566c532"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const database = getDatabase(app);
-
-        // Make Firebase globally available
+        
         window.firebaseApp = app;
         window.firebaseDatabase = database;
-
+        
         console.log('🔥 Firebase inizializzato con successo');
     </script>
 
+    <!-- ✅ SCRIPT PRINCIPALE (ULTIMO - fondamentale per il login) -->
     <script src="script.js"></script>
 </body>
 </html>
