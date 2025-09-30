@@ -6,10 +6,6 @@
     <title>Event Management System</title>
     <link rel="stylesheet" href="style.css">
     <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📊</text></svg>">
-
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.4.0/firebase-database-compat.js"></script>
 </head>
 <body>
     <!-- Login Screen -->
@@ -451,6 +447,34 @@
             </div>
         </main>
     </div>
+
+    <!-- FIREBASE CONFIGURAZIONE REALE INTEGRATA -->
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+        import { getDatabase } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-database.js";
+
+        // Your web app's Firebase configuration (REALE)
+        const firebaseConfig = {
+            apiKey: "AIzaSyBtkt8WKEQ9hohxGLYiswYQkXIBMYHMG5k",
+            authDomain: "event-management-assomor-a7b0f.firebaseapp.com",
+            databaseURL: "https://event-management-assomor-a7b0f-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "event-management-assomor-a7b0f",
+            storageBucket: "event-management-assomor-a7b0f.firebasestorage.app",
+            messagingSenderId: "1023833761975",
+            appId: "1:1023833761975:web:9463184f23d336c566c532"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const database = getDatabase(app);
+
+        // Make Firebase globally available
+        window.firebaseApp = app;
+        window.firebaseDatabase = database;
+
+        console.log('🔥 Firebase inizializzato con successo');
+    </script>
 
     <script src="script.js"></script>
 </body>
