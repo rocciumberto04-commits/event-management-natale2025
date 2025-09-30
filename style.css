@@ -674,7 +674,7 @@ body {
   overflow-y: hidden;
   width: 100%;
   max-height: 500px;
-  
+
   /* Scrollbar personalizzata ma più sottile */
   scrollbar-width: thin;
   scrollbar-color: #3b82f6 #f1f5f9;
@@ -871,7 +871,7 @@ body {
   .data-table-clean {
     min-width: 1200px;
   }
-  
+
   .table-scroll-clean {
     max-height: 400px;
   }
@@ -881,66 +881,66 @@ body {
   .tab-content {
     padding: 1rem;
   }
-  
+
   .app-header {
     padding: 1rem;
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .header-actions {
     justify-content: center;
     flex-wrap: wrap;
   }
-  
+
   .section-header {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .section-actions {
     justify-content: stretch;
   }
-  
+
   .search-input {
     min-width: 100%;
   }
-  
+
   .stats-grid, .summary-cards {
     grid-template-columns: 1fr;
   }
-  
+
   .form-row {
     grid-template-columns: 1fr;
   }
-  
+
   .team-preview {
     grid-template-columns: 1fr;
   }
-  
+
   .checkbox-group {
     grid-template-columns: 1fr;
   }
-  
+
   .data-table-clean {
     min-width: 1000px;
     font-size: 11px;
   }
-  
+
   .data-table-clean th,
   .data-table-clean td {
     padding: 6px;
   }
-  
+
   .table-scroll-clean {
     max-height: 350px;
   }
-  
+
   .table-scroll-clean::-webkit-scrollbar {
     height: 6px;
   }
-  
+
   .sync-controls {
     justify-content: center;
   }
@@ -950,30 +950,30 @@ body {
   .login-container {
     padding: 1rem;
   }
-  
+
   .login-form {
     padding: 1.5rem;
   }
-  
+
   .tab-navigation {
     padding: 0 1rem;
   }
-  
+
   .tab-btn {
     padding: 0.75rem 1rem;
     font-size: 0.8rem;
   }
-  
+
   .data-table-clean {
     min-width: 900px;
     font-size: 10px;
   }
-  
+
   .col-name, .col-company { width: 100px; min-width: 100px; }
   .col-email { width: 150px; min-width: 150px; }
   .col-notes, .col-address { width: 160px; min-width: 160px; }
   .col-services { width: 140px; min-width: 140px; }
-  
+
   .table-scroll-clean {
     max-height: 300px;
   }
@@ -1016,28 +1016,28 @@ body {
   .login-screen, .app-header, .tab-navigation, .btn {
     display: none !important;
   }
-  
+
   .tab-pane.active {
     display: block !important;
   }
-  
+
   body {
     background: white;
   }
-  
+
   .card, .table-container-clean {
     box-shadow: none;
     border: 1px solid #ccc;
     break-inside: avoid;
   }
-  
+
   .data-table-clean {
     min-width: auto;
     font-size: 10px;
     background: white;
     color: black;
   }
-  
+
   .data-table-clean th,
   .data-table-clean td {
     background: white;
